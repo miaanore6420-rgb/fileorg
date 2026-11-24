@@ -6,7 +6,7 @@
 <title>My File Folders</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: one calm column. Header with storage meter, a toolbar (path, search, actions), folder cards, then a file list. */
+/* Layout: one calm column. Header with account, a toolbar (path, search, actions), folder cards, then a file list. */
 :root{
   --bg:#f2f5f3; --surface:#fbfcfb; --surface-2:#e6ece9; --line:#d2dad6;
   --fg:#16201c; --muted:#58675f; --accent:#0e6a58; --accent-fg:#ffffff;
@@ -49,10 +49,9 @@ body{
 header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
 h1{font:600 1.7rem/1.15 var(--font-ui);letter-spacing:-.01em;margin:0}
 .sub{margin:5px 0 0;color:var(--muted);font:.8rem var(--font-mono)}
-.meter{flex:0 1 260px;min-width:200px;display:grid;gap:5px}
-.meter-track{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
-.meter-bar{display:block;height:100%;width:0;background:var(--accent)}
-.meter-text{font:.75rem var(--font-mono);color:var(--muted)}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font:.8rem var(--font-mono);color:var(--muted);min-width:0}
+.who span{overflow-wrap:anywhere}
+.who .btn{min-height:32px;padding:4px 12px}
 
 .bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding-block:10px;border-block:1px solid var(--line)}
 #crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-width:0}
@@ -62,7 +61,7 @@ h1{font:600 1.7rem/1.15 var(--font-ui);letter-spacing:-.01em;margin:0}
 .sep{color:var(--muted)}
 .tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 420px;justify-content:flex-end}
 .tools .search{flex:1 1 180px;min-width:0}
-input[type=search],input[type=text],select{
+input[type=search],input[type=text],input[type=email],input[type=password],select{
   font:inherit;color:var(--fg);background:var(--surface);
   border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:38px;width:100%;
 }
@@ -73,6 +72,14 @@ select{width:auto}
 .btn.primary:hover:not(:disabled){filter:brightness(1.08)}
 .btn.danger{background:var(--danger);border-color:var(--danger);color:var(--danger-fg)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
+
+.card{max-width:440px;margin:36px auto 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;display:grid;gap:12px;width:100%}
+.card h2{margin:0;font:600 1.2rem var(--font-ui)}
+.card p{margin:0;color:var(--muted)}
+.card code{font:.85em var(--font-mono);background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.card .err{color:var(--danger);font-size:.9rem}
+.card .ok{color:var(--ok);font-size:.9rem}
+.card .row{display:flex;flex-wrap:wrap;gap:8px}
 
 .notice{padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:.9rem}
 .notice.err{border-color:var(--danger);color:var(--danger)}
@@ -87,7 +94,7 @@ select{width:auto}
 .up .ib{flex:none}
 
 .sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-section h2{margin:0;font:600 .78rem var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+section h2.label{margin:0;font:600 .78rem var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .sort{display:flex;align-items:center;gap:8px;font:.78rem var(--font-mono);color:var(--muted)}
 .sort select{min-height:32px;padding:4px 8px;font-size:.85rem}
 main{display:grid;gap:22px}
@@ -128,7 +135,7 @@ main{display:grid;gap:22px}
 .ib:disabled{opacity:.4;cursor:not-allowed}
 
 .empty{border:1px dashed var(--line);border-radius:12px;padding:38px 20px;text-align:center;display:grid;gap:6px;justify-items:center}
-.empty h2{margin:0;font:600 1.1rem var(--font-ui);letter-spacing:0;text-transform:none;color:var(--fg)}
+.empty h2{margin:0;font:600 1.1rem var(--font-ui);color:var(--fg)}
 .empty p{margin:0;color:var(--muted);max-width:48ch}
 .foot{font:.75rem/1.55 var(--font-mono);color:var(--muted);max-width:72ch}
 
@@ -156,52 +163,79 @@ main{display:grid;gap:22px}
   <header class="top">
     <div>
       <h1>My File Folders</h1>
-      <p class="sub" id="summary">Loading…</p>
+      <p class="sub" id="summary"></p>
     </div>
-    <div class="meter" id="meter" hidden>
-      <div class="meter-track"><span class="meter-bar" id="meter-bar"></span></div>
-      <div class="meter-text" id="meter-text"></div>
+    <div class="who" id="who" hidden>
+      <span id="who-email"></span>
+      <button class="btn" id="btn-out" type="button">Sign out</button>
     </div>
   </header>
 
-  <div class="bar">
-    <nav id="crumbs" aria-label="Folder path"></nav>
-    <div class="tools">
-      <label class="search"><span class="sr">Search files and folders</span><input id="q" type="search" placeholder="Search all folders" autocomplete="off"></label>
-      <button class="btn" id="btn-folder" type="button">New folder</button>
-      <button class="btn" id="btn-updir" type="button">Upload folder</button>
-      <button class="btn primary" id="btn-upload" type="button">Upload files</button>
-      <input id="file-input" type="file" multiple hidden>
-      <input id="dir-input" type="file" webkitdirectory multiple hidden>
-    </div>
-  </div>
+  <section class="card" id="setup" hidden>
+    <h2>One more step</h2>
+    <p>This page isn’t connected to your Supabase project yet. Open <code>index.html</code>, find the two lines near the top of the script that say <code>PASTE_YOUR_...</code>, and paste in your project URL and anon key. Then run <code>setup.sql</code> in Supabase.</p>
+  </section>
 
-  <div class="notice err" id="banner" role="alert" hidden></div>
-  <div class="notice" id="notice" role="status" hidden></div>
-  <div class="uploads" id="uploads" aria-live="polite"></div>
-
-  <main>
-    <section id="folders-sec" hidden>
-      <div class="sec-head"><h2>Folders</h2></div>
-      <div class="folders" id="folders"></div>
-    </section>
-    <section id="files-sec" hidden>
-      <div class="sec-head">
-        <h2>Files</h2>
-        <label class="sort">Sort
-          <select id="sort">
-            <option value="name">Name</option>
-            <option value="new">Newest</option>
-            <option value="size">Largest</option>
-          </select>
-        </label>
+  <section class="card" id="auth" hidden>
+    <h2>Sign in to your folders</h2>
+    <form id="auth-form" class="field" style="gap:12px">
+      <div class="field">
+        <label for="auth-email">Email</label>
+        <input id="auth-email" type="email" autocomplete="username" required>
       </div>
-      <div class="files" id="files"></div>
-    </section>
-    <div class="empty" id="empty" hidden></div>
-  </main>
+      <div class="field">
+        <label for="auth-pass">Password</label>
+        <input id="auth-pass" type="password" autocomplete="current-password" minlength="8" required>
+      </div>
+      <p class="err" id="auth-error" role="alert" hidden></p>
+      <p class="ok" id="auth-info" role="status" hidden></p>
+      <div class="row">
+        <button class="btn primary" id="btn-signin" type="submit">Sign in</button>
+        <button class="btn" id="btn-signup" type="button">Create account</button>
+      </div>
+    </form>
+  </section>
 
-  <p class="foot">Everything you add is saved in this browser on this device only. It isn’t uploaded anywhere, and clearing your browser’s site data deletes it. Drop files or whole folders anywhere on this page to add them to the folder you’re viewing.</p>
+  <div id="app" class="wrap" hidden>
+    <div class="bar">
+      <nav id="crumbs" aria-label="Folder path"></nav>
+      <div class="tools">
+        <label class="search"><span class="sr">Search files and folders</span><input id="q" type="search" placeholder="Search all folders" autocomplete="off"></label>
+        <button class="btn" id="btn-folder" type="button">New folder</button>
+        <button class="btn" id="btn-updir" type="button">Upload folder</button>
+        <button class="btn primary" id="btn-upload" type="button">Upload files</button>
+        <input id="file-input" type="file" multiple hidden>
+        <input id="dir-input" type="file" webkitdirectory multiple hidden>
+      </div>
+    </div>
+
+    <div class="notice err" id="banner" role="alert" hidden></div>
+    <div class="notice" id="notice" role="status" hidden></div>
+    <div class="uploads" id="uploads" aria-live="polite"></div>
+
+    <main>
+      <section id="folders-sec" hidden>
+        <div class="sec-head"><h2 class="label">Folders</h2></div>
+        <div class="folders" id="folders"></div>
+      </section>
+      <section id="files-sec" hidden>
+        <div class="sec-head">
+          <h2 class="label">Files</h2>
+          <label class="sort">Sort
+            <select id="sort">
+              <option value="name">Name</option>
+              <option value="new">Newest</option>
+              <option value="size">Largest</option>
+            </select>
+          </label>
+        </div>
+        <div class="files" id="files"></div>
+      </section>
+      <div class="empty" id="empty" hidden></div>
+    </main>
+
+    <p class="foot">Your files are stored in your own Supabase project and can only be opened while you’re signed in. Each file can be up to 50 MB on Supabase’s free plan. Drop files or whole folders anywhere on this page to add them to the folder you’re viewing.</p>
+  </div>
 </div>
 
 <div class="drop-hint" id="drop-hint" hidden>Drop files or folders to add them here</div>
@@ -226,11 +260,21 @@ main{display:grid;gap:22px}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.53.0/dist/umd/supabase.js"></script>
 <script>
+/* ============ YOUR SETTINGS: paste these two values from Supabase ============
+   Supabase dashboard > Project Settings > API
+   - Project URL      looks like  https://abcdefgh.supabase.co
+   - anon public key  a long string starting with  eyJ...  (never use the service_role key)  */
+var SUPABASE_URL = 'PASTE_YOUR_PROJECT_URL';
+var SUPABASE_KEY = 'PASTE_YOUR_ANON_KEY';
+/* ============================================================================ */
+
 (function(){
 'use strict';
 
 var ROOT = 'root';
+var BUCKET = 'files';
 var MIME = {
   png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', webp:'image/webp', svg:'image/svg+xml',
   pdf:'application/pdf', mp4:'video/mp4', webm:'video/webm', mp3:'audio/mpeg', wav:'audio/wav',
@@ -240,13 +284,13 @@ var VIEWABLE = {'application/pdf':1, 'text/plain':1, 'text/csv':1, 'text/markdow
 
 var S = {
   folders:{}, files:{}, cur:ROOT, query:'', sort:'name',
-  ready:false, dbError:'', usage:null, uploads:[], dragDepth:0
+  ready:false, dbError:'', uploads:[], dragDepth:0,
+  userId:null, email:'', authKnown:false
 };
+var sb = null;
 var uid = 0;
 var noticeTimer = null;
 var renderTimer = null;
-var idb = null;
-var bc = null;
 var thumbs = {};
 
 function $(id){ return document.getElementById(id); }
@@ -291,13 +335,18 @@ function sorter(kind){
   return cmpName;
 }
 function newId(){
-  if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  var c = window.crypto;
+  if (c && c.randomUUID) return c.randomUUID();
+  var b = c.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  var h = Array.prototype.map.call(b, function(x){ return ('0' + x.toString(16)).slice(-2); }).join('');
+  return h.slice(0,8) + '-' + h.slice(8,12) + '-' + h.slice(12,16) + '-' + h.slice(16,20) + '-' + h.slice(20);
 }
 function scheduleRender(){
   if (renderTimer) return;
   renderTimer = setTimeout(function(){ renderTimer = null; render(); }, 120);
 }
+function toDb(id){ return id === ROOT ? null : id; }
 
 var SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
 var ICONS = {
@@ -318,76 +367,90 @@ function iconBtn(name, label, onclick, cls){
   return el('button', {class:'ib ' + (cls || ''), type:'button', title:label, 'aria-label':label, onclick:onclick, disabled:!S.ready}, [icon(name)]);
 }
 
-/* ---------- browser storage (IndexedDB) ---------- */
-function openDb(){
-  return new Promise(function(res, rej){
-    if (!window.indexedDB) { rej(new Error('no indexedDB')); return; }
-    var r;
-    try { r = indexedDB.open('my-file-folders', 1); } catch (e) { rej(e); return; }
-    r.onupgradeneeded = function(){
-      var d = r.result;
-      d.createObjectStore('folders', {keyPath:'id'});
-      d.createObjectStore('files', {keyPath:'id'});
-      d.createObjectStore('blobs', {keyPath:'id'});
-    };
-    r.onsuccess = function(){ res(r.result); };
-    r.onerror = function(){ rej(r.error || new Error('open failed')); };
+/* ---------- cloud storage (Supabase) ---------- */
+function q(p){
+  return Promise.resolve(p).then(function(r){
+    if (r && r.error) throw r.error;
+    return r;
   });
 }
-function run(stores, mode, fn){
-  return new Promise(function(res, rej){
-    var t = idb.transaction(stores, mode), out;
-    t.oncomplete = function(){ res(out && out.result); };
-    t.onerror = function(){ rej(t.error); };
-    t.onabort = function(){ rej(t.error || new Error('aborted')); };
-    out = fn(t);
-  });
-}
-function put(store, rec){ return run([store], 'readwrite', function(t){ return t.objectStore(store).put(rec); }); }
-function all(store){ return run([store], 'readonly', function(t){ return t.objectStore(store).getAll(); }); }
-function getBlob(id){
-  return run(['blobs'], 'readonly', function(t){ return t.objectStore('blobs').get(id); })
-    .then(function(r){ return r && r.blob; });
-}
-function loadAll(){
-  return Promise.all([all('folders'), all('files')]).then(function(r){
-    var f = {}, i = {};
-    r[0].forEach(function(x){ f[x.id] = x; });
-    r[1].forEach(function(x){ i[x.id] = x; });
-    S.folders = f; S.files = i; S.ready = true;
-  });
-}
-function storeErr(e){
-  if (e && (e.name === 'QuotaExceededError' || e.code === 22)) return 'Your browser’s storage is full. Delete something and try again.';
+function errMsg(e){
+  var m = String((e && e.message) || '');
+  if (/exceeded the maximum allowed size|payload too large|too large/i.test(m) || (e && String(e.statusCode) === '413')) return 'Over the 50 MB limit for one file.';
+  if (/row-level security|not authorized|jwt|permission denied/i.test(m)) return 'You’re signed out or don’t have access. Sign in again.';
+  if (/failed to fetch|networkerror|network request failed|load failed/i.test(m)) return 'No connection. Check your internet and try again.';
+  if (/quota|storage limit/i.test(m)) return 'Your Supabase storage is full.';
   return 'That didn’t save. Try again.';
 }
-function changed(){
-  render();
-  refreshUsage();
-  if (bc) { try { bc.postMessage('changed'); } catch (e) {} }
+function loadMsg(e){
+  var m = String((e && (e.message || e.code)) || '') + ' ' + String((e && e.code) || '');
+  if (/does not exist|schema cache|PGRST205|42P01/i.test(m)) return 'The tables aren’t set up yet. Run setup.sql in your Supabase SQL Editor, then reload this page.';
+  return 'Couldn’t load your folders. Check your connection and reload.';
 }
-function patchItem(kind, id, patch){
-  var store = kind === 'folder' ? 'folders' : 'files';
+function normFolder(x){ return {id:x.id, name:x.name, parent:x.parent || ROOT, createdAt:Date.parse(x.created_at) || 0}; }
+function normFile(x){ return {id:x.id, name:x.name, folder:x.folder || ROOT, size:Number(x.size) || 0, type:x.type || '', path:x.path, createdAt:Date.parse(x.created_at) || 0}; }
+function fetchAll(table){
+  var out = [];
+  function page(from){
+    return sb.from(table).select('*').order('created_at', {ascending:true}).order('id', {ascending:true}).range(from, from + 999)
+      .then(function(r){
+        if (r.error) throw r.error;
+        out = out.concat(r.data || []);
+        return (r.data || []).length === 1000 ? page(from + 1000) : out;
+      });
+  }
+  return page(0);
+}
+function reload(quiet){
+  var who = S.userId;
+  return Promise.all([fetchAll('folders'), fetchAll('files')]).then(function(r){
+    if (S.userId !== who) return;
+    var f = {}, i = {};
+    r[0].forEach(function(x){ f[x.id] = normFolder(x); });
+    r[1].forEach(function(x){ i[x.id] = normFile(x); });
+    S.folders = f; S.files = i; S.ready = true; S.dbError = '';
+    render();
+  }).catch(function(e){
+    if (quiet) return;
+    S.dbError = loadMsg(e);
+    render();
+  });
+}
+function patchItem(kind, id, dbPatch, localPatch){
+  var table = kind === 'folder' ? 'folders' : 'files';
   var map = kind === 'folder' ? S.folders : S.files;
-  var rec = Object.assign({}, map[id], patch, {id:id});
-  return put(store, rec).then(function(){ map[id] = rec; changed(); });
+  return q(sb.from(table).update(dbPatch).eq('id', id)).then(function(){
+    map[id] = Object.assign({}, map[id], localPatch);
+    render();
+  });
 }
-function deleteRecords(folderIds, files){
-  return run(['folders', 'files', 'blobs'], 'readwrite', function(t){
-    folderIds.forEach(function(id){ t.objectStore('folders').delete(id); });
-    files.forEach(function(f){ t.objectStore('files').delete(f.id); t.objectStore('blobs').delete(f.id); });
+function chunks(arr, n){
+  var out = [];
+  for (var i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  return out;
+}
+function removePaths(paths){
+  var p = Promise.resolve();
+  chunks(paths, 100).forEach(function(c){
+    p = p.then(function(){ return q(sb.storage.from(BUCKET).remove(c)); });
+  });
+  return p;
+}
+/* Deletes files (storage + rows). With `top`, deletes that folder row; subfolders and file rows follow by cascade. */
+function deleteRecords(folderIds, files, top){
+  var paths = files.map(function(f){ return f.path; }).filter(Boolean);
+  return removePaths(paths).then(function(){
+    if (top) return q(sb.from('folders').delete().eq('id', top));
+    var p = Promise.resolve();
+    chunks(files.map(function(f){ return f.id; }), 100).forEach(function(c){
+      p = p.then(function(){ return q(sb.from('files').delete().in('id', c)); });
+    });
+    return p;
   }).then(function(){
     folderIds.forEach(function(id){ delete S.folders[id]; });
     files.forEach(function(f){ delete S.files[f.id]; dropThumb(f.id); });
-    changed();
+    render();
   });
-}
-function refreshUsage(){
-  if (!navigator.storage || !navigator.storage.estimate) return;
-  navigator.storage.estimate().then(function(r){
-    S.usage = {bytes:r.usage || 0, maxBytes:r.quota || 0};
-    renderSummary();
-  }).catch(function(){});
 }
 
 /* ---------- data views ---------- */
@@ -404,7 +467,7 @@ function folderList(){
 function fileList(){
   return Object.keys(S.files).map(function(id){
     var d = S.files[id];
-    return {id:id, name:String(d.name || 'Untitled'), where:parentOf(d.folder), size:d.size || 0, type:d.type || '', createdAt:d.createdAt || 0};
+    return {id:id, name:String(d.name || 'Untitled'), where:parentOf(d.folder), size:d.size || 0, type:d.type || '', path:d.path, createdAt:d.createdAt || 0};
   });
 }
 function pathNames(id){
@@ -549,9 +612,11 @@ function askNewFolder(){
       var err = checkName(v.text);
       if (err) return err;
       if (nameTaken(folderList(), S.cur, v.text)) return 'A folder named “' + v.text + '” already exists here.';
-      var id = newId();
-      var rec = {id:id, name:v.text, parent:S.cur, createdAt:Date.now()};
-      return put('folders', rec).then(function(){ S.folders[id] = rec; changed(); return ''; }, storeErr);
+      return q(sb.from('folders').insert({name:v.text, parent:toDb(S.cur)}).select().single()).then(function(r){
+        S.folders[r.data.id] = normFolder(r.data);
+        render();
+        return '';
+      }, errMsg);
     }
   });
 }
@@ -564,7 +629,7 @@ function askRename(kind, item){
       if (v.text === item.name) return '';
       var list = kind === 'folder' ? folderList() : fileList();
       if (nameTaken(list, item.where, v.text, item.id)) return '“' + v.text + '” already exists in that folder.';
-      return patchItem(kind, item.id, {name:v.text}).then(function(){ return ''; }, storeErr);
+      return patchItem(kind, item.id, {name:v.text}, {name:v.text}).then(function(){ return ''; }, errMsg);
     }
   });
 }
@@ -582,8 +647,9 @@ function askMove(kind, item){
       if (target === item.where) return '';
       var list = kind === 'folder' ? folderList() : fileList();
       if (nameTaken(list, target, item.name, item.id)) return 'There’s already something named “' + item.name + '” in that folder.';
-      var patch = kind === 'folder' ? {parent:target} : {folder:target};
-      return patchItem(kind, item.id, patch).then(function(){ return ''; }, storeErr);
+      var dbPatch = kind === 'folder' ? {parent:toDb(target)} : {folder:toDb(target)};
+      var local = kind === 'folder' ? {parent:target} : {folder:target};
+      return patchItem(kind, item.id, dbPatch, local).then(function(){ return ''; }, errMsg);
     }
   });
 }
@@ -591,7 +657,7 @@ function askDeleteFile(f){
   openDialog({
     title:'Delete file', body:'“' + f.name + '” will be permanently deleted. This can’t be undone.',
     okText:'Delete', danger:true,
-    onOk:function(){ return deleteRecords([], [f]).then(function(){ return ''; }, storeErr); }
+    onOk:function(){ return deleteRecords([], [f], null).then(function(){ return ''; }, errMsg); }
   });
 }
 function askDeleteFolder(f){
@@ -604,7 +670,7 @@ function askDeleteFolder(f){
   var body = '“' + f.name + '”' + (parts.length ? ' and everything in it (' + parts.join(', ') + ') will be permanently deleted.' : ' will be deleted.') + ' This can’t be undone.';
   openDialog({
     title:'Delete folder', body:body, okText:'Delete', danger:true,
-    onOk:function(){ return deleteRecords(Object.keys(ids), inside).then(function(){ return ''; }, storeErr); }
+    onOk:function(){ return deleteRecords(Object.keys(ids), inside, f.id).then(function(){ return ''; }, errMsg); }
   });
 }
 
@@ -615,43 +681,38 @@ function viewType(f){
   if (/^(image|video|audio)\//.test(t) || VIEWABLE[t]) return t;
   return '';
 }
+function signed(f, opts){
+  return sb.storage.from(BUCKET).createSignedUrl(f.path, 3600, opts).then(function(r){
+    if (r.error) throw r.error;
+    return r.data.signedUrl;
+  });
+}
 function saveFile(f){
-  getBlob(f.id).then(function(b){
-    if (!b) throw new Error('missing');
-    var u = URL.createObjectURL(b);
+  signed(f, {download:f.name}).then(function(u){
     var a = document.createElement('a');
     a.href = u; a.download = f.name;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(function(){ URL.revokeObjectURL(u); }, 15000);
-  }).catch(function(){ notice('Couldn’t read “' + f.name + '” from browser storage.', 'err'); });
+  }).catch(function(){ notice('Couldn’t get “' + f.name + '”. Check your connection and try again.', 'err'); });
 }
 function openFile(f){
-  var t = viewType(f);
-  if (!t) { saveFile(f); return; }
+  if (!viewType(f)) { saveFile(f); return; }
   var w = window.open('', '_blank');
   if (!w) { saveFile(f); return; }
-  getBlob(f.id).then(function(b){
-    if (!b) throw new Error('missing');
-    w.location.href = URL.createObjectURL(new Blob([b], {type:t}));
+  signed(f).then(function(u){
+    w.location.href = u;
   }).catch(function(){
     try { w.close(); } catch (e) {}
-    notice('Couldn’t read “' + f.name + '” from browser storage.', 'err');
+    notice('Couldn’t open “' + f.name + '”. Check your connection and try again.', 'err');
   });
 }
 function thumbUrl(f){
-  if (thumbs[f.id]) return Promise.resolve(thumbs[f.id]);
-  return getBlob(f.id).then(function(b){
-    if (!b) return '';
-    var u = URL.createObjectURL(b);
-    thumbs[f.id] = u;
-    return u;
-  });
+  var t = thumbs[f.id];
+  if (t && Date.now() - t.at < 50 * 60 * 1000) return Promise.resolve(t.u);
+  return signed(f).then(function(u){ thumbs[f.id] = {u:u, at:Date.now()}; return u; });
 }
-function dropThumb(id){
-  if (thumbs[id]) { URL.revokeObjectURL(thumbs[id]); delete thumbs[id]; }
-}
+function dropThumb(id){ delete thumbs[id]; }
 var io = null;
 if ('IntersectionObserver' in window) {
   io = new IntersectionObserver(function(entries){
@@ -675,9 +736,11 @@ function ensurePath(where, path, cache){
       if (cache[key]) return cache[key];
       var ex = folderList().filter(function(f){ return f.where === parent && f.name.toLowerCase() === seg.toLowerCase(); })[0];
       if (ex) { cache[key] = ex.id; return ex.id; }
-      var id = newId();
-      var rec = {id:id, name:seg, parent:parent, createdAt:Date.now()};
-      return put('folders', rec).then(function(){ S.folders[id] = rec; cache[key] = id; return id; });
+      return q(sb.from('folders').insert({name:seg, parent:toDb(parent)}).select().single()).then(function(r){
+        S.folders[r.data.id] = normFolder(r.data);
+        cache[key] = r.data.id;
+        return r.data.id;
+      });
     });
   });
   return p;
@@ -685,25 +748,29 @@ function ensurePath(where, path, cache){
 function uploadOne(x, it, where, batch, cache){
   var file = x.file;
   if (file.size === 0) return failUpload(it, 'The file is empty.');
-  it.status = 'uploading'; it.msg = 'Saving…';
+  it.status = 'uploading'; it.msg = 'Uploading…';
   renderUploads();
+  var path = null;
   return ensurePath(where, x.path, cache).then(function(fid){
     var name = uniqueFileName(file.name, fid, batch);
     var id = newId();
-    var rec = {id:id, name:name, folder:fid, size:file.size, type:file.type || MIME[extOf(file.name)] || 'application/octet-stream', createdAt:Date.now()};
-    return run(['files', 'blobs'], 'readwrite', function(t){
-      t.objectStore('files').put(rec);
-      t.objectStore('blobs').put({id:id, blob:file});
-    }).then(function(){
-      S.files[id] = rec;
+    var type = file.type || MIME[extOf(file.name)] || 'application/octet-stream';
+    path = S.userId + '/' + id;
+    return q(sb.storage.from(BUCKET).upload(path, file, {contentType:type, upsert:false})).then(function(){
+      return q(sb.from('files').insert({id:id, name:name, folder:toDb(fid), size:file.size, type:type, path:path}).select().single());
+    }).then(function(r){
+      S.files[id] = normFile(r.data);
       it.status = 'done'; it.msg = 'Saved';
       renderUploads(); scheduleRender();
     });
-  }).catch(function(e){ return failUpload(it, storeErr(e)); });
+  }).catch(function(e){
+    if (path) { sb.storage.from(BUCKET).remove([path]).then(function(){}, function(){}); }
+    return failUpload(it, errMsg(e));
+  });
 }
 function uploadAll(entries, where){
   if (!entries.length) return;
-  if (!S.ready) { notice('Storage isn’t ready yet.', 'err'); return; }
+  if (!S.ready || !S.userId) { notice('Your folders haven’t finished loading yet.', 'err'); return; }
   var batch = {}, cache = {};
   var items = entries.filter(function(x){ return x.file; }).map(function(x){
     var it = {id:++uid, name:x.path.concat(x.file.name).join('/'), status:'waiting', msg:'Waiting'};
@@ -719,12 +786,15 @@ function uploadAll(entries, where){
     chain = chain.then(function(){ return uploadOne(p.x, p.it, where, batch, cache); });
   });
   chain.then(function(){
-    changed();
+    render();
     setTimeout(function(){
       S.uploads = S.uploads.filter(function(it){ return it.status !== 'done'; });
       renderUploads();
     }, 4000);
-  }, function(e){ notice(storeErr(e), 'err'); changed(); });
+  }, function(e){ notice(errMsg(e), 'err'); render(); });
+}
+function uploadsBusy(){
+  return S.uploads.some(function(it){ return it.status === 'waiting' || it.status === 'uploading'; });
 }
 function fromInput(list){
   return Array.prototype.slice.call(list || []).map(function(f){
@@ -775,22 +845,20 @@ function renderControls(){
 }
 function renderSummary(){
   var s = $('summary');
+  if (!S.userId) { s.textContent = ''; return; }
   if (S.dbError) s.textContent = 'Storage unavailable';
   else if (!S.ready) s.textContent = 'Loading…';
-  else s.textContent = plural(Object.keys(S.files).length, 'file') + ' in ' + plural(Object.keys(S.folders).length, 'folder');
-  var m = $('meter');
-  if (S.usage && S.usage.maxBytes) {
-    m.hidden = false;
-    var pct = Math.min(100, Math.round(S.usage.bytes / S.usage.maxBytes * 100));
-    $('meter-bar').style.width = Math.max(pct, S.usage.bytes > 0 ? 2 : 0) + '%';
-    $('meter-text').textContent = 'Browser storage: ' + fmtBytes(S.usage.bytes) + ' of ' + fmtBytes(S.usage.maxBytes) + ' used';
-  } else m.hidden = true;
+  else {
+    var total = 0;
+    Object.keys(S.files).forEach(function(id){ total += S.files[id].size || 0; });
+    s.textContent = plural(Object.keys(S.files).length, 'file') + ' in ' + plural(Object.keys(S.folders).length, 'folder') + ' · ' + fmtBytes(total);
+  }
 }
 function renderCrumbs(){
   var n = $('crumbs');
   n.textContent = '';
-  var q = S.query.trim();
-  if (q) { n.appendChild(el('span', {class:'crumb-now', text:'Results for “' + q + '”'})); return; }
+  var qy = S.query.trim();
+  if (qy) { n.appendChild(el('span', {class:'crumb-now', text:'Results for “' + qy + '”'})); return; }
   var trail = [], id = S.cur, seen = {};
   while (id && id !== ROOT && S.folders[id] && !seen[id]) {
     seen[id] = 1; trail.unshift(id); id = parentOf(S.folders[id].parent);
@@ -823,14 +891,13 @@ function folderCard(f, counts, showWhere){
 function fileRow(f, showWhere){
   var ext = extOf(f.name);
   var box = el('span', {class:'thumbbox', 'aria-hidden':'true'}, [ext ? ext.slice(0, 4).toUpperCase() : 'FILE']);
-  if (/^image\//.test(f.type) && f.size <= 15 * 1024 * 1024) {
+  if (/^image\//.test(f.type) && f.type !== 'image/svg+xml' && f.size <= 2 * 1024 * 1024) {
     box._load = function(){
       thumbUrl(f).then(function(u){
-        if (!u) return;
         var img = el('img', {src:u, alt:''});
         img.addEventListener('error', function(){ img.remove(); });
         box.appendChild(img);
-      });
+      }).catch(function(){});
     };
     if (io) io.observe(box); else box._load();
   }
@@ -858,14 +925,14 @@ function setEmpty(title, body){
   e.hidden = false;
 }
 function renderList(){
-  var q = S.query.trim().toLowerCase(), searching = !!q;
+  var qy = S.query.trim().toLowerCase(), searching = !!qy;
   var fl = folderList(), fi = fileList();
   var counts = {f:{}, i:{}};
   fl.forEach(function(f){ counts.f[f.where] = (counts.f[f.where] || 0) + 1; });
   fi.forEach(function(f){ counts.i[f.where] = (counts.i[f.where] || 0) + 1; });
 
-  var folders = searching ? fl.filter(function(f){ return f.name.toLowerCase().indexOf(q) >= 0; }) : fl.filter(function(f){ return f.where === S.cur; });
-  var files = searching ? fi.filter(function(f){ return f.name.toLowerCase().indexOf(q) >= 0; }) : fi.filter(function(f){ return f.where === S.cur; });
+  var folders = searching ? fl.filter(function(f){ return f.name.toLowerCase().indexOf(qy) >= 0; }) : fl.filter(function(f){ return f.where === S.cur; });
+  var files = searching ? fi.filter(function(f){ return f.name.toLowerCase().indexOf(qy) >= 0; }) : fi.filter(function(f){ return f.where === S.cur; });
   folders.sort(S.sort === 'new' ? sorter('new') : cmpName);
   files.sort(sorter(S.sort));
 
@@ -878,7 +945,7 @@ function renderList(){
 
   $('empty').hidden = true;
   if (folders.length || files.length) return;
-  if (S.dbError) { setEmpty('Nothing to show', 'Your folders will appear here once browser storage is available.'); return; }
+  if (S.dbError) { setEmpty('Nothing to show', 'Your folders will appear here once they can be loaded.'); return; }
   if (!S.ready) { setEmpty('Loading your folders…', ''); return; }
   if (searching) { setEmpty('No matches', 'Nothing is named “' + S.query.trim() + '”. Try a shorter search.'); return; }
   if (!fl.length && !fi.length) { setEmpty('No folders yet', 'Make a folder for each project, then drop files or whole folders into it. Anything you drop on this page goes into the folder you’re viewing.'); return; }
@@ -916,6 +983,70 @@ function render(){
   renderUploads();
 }
 
+/* ---------- account ---------- */
+function showScreen(){
+  var configured = !!sb;
+  $('setup').hidden = configured;
+  $('auth').hidden = !configured || !!S.userId;
+  $('app').hidden = !S.userId;
+  $('who').hidden = !S.userId;
+  $('who-email').textContent = S.email || '';
+}
+function setSession(session){
+  var id = session && session.user ? session.user.id : null;
+  if (S.authKnown && id === S.userId) return;
+  S.authKnown = true;
+  S.userId = id;
+  S.email = session && session.user ? (session.user.email || '') : '';
+  S.folders = {}; S.files = {}; S.ready = false; S.dbError = '';
+  S.cur = ROOT; S.query = ''; S.uploads = []; thumbs = {};
+  $('q').value = '';
+  showScreen();
+  render();
+  if (id) reload(false);
+}
+function authMsg(text, kind){
+  var er = $('auth-error'), ok = $('auth-info');
+  er.hidden = kind !== 'err' || !text;
+  ok.hidden = kind !== 'ok' || !text;
+  if (kind === 'err') er.textContent = text || '';
+  if (kind === 'ok') ok.textContent = text || '';
+}
+function authError(e){
+  var m = String((e && e.message) || '');
+  if (/invalid login credentials/i.test(m)) return 'Wrong email or password.';
+  if (/email not confirmed/i.test(m)) return 'Confirm your email first. Check your inbox for the link.';
+  if (/already registered|already been registered/i.test(m)) return 'That email already has an account. Use Sign in.';
+  if (/signups not allowed|signup is disabled|sign.?ups? (are )?disabled/i.test(m)) return 'New accounts are turned off for this site.';
+  if (/password/i.test(m)) return m;
+  if (/failed to fetch|network/i.test(m)) return 'No connection. Check your internet and try again.';
+  return 'Couldn’t sign in. Try again.';
+}
+function creds(){ return {email:$('auth-email').value.trim(), password:$('auth-pass').value}; }
+$('auth-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  authMsg('', 'err');
+  var c = creds();
+  $('btn-signin').disabled = true;
+  sb.auth.signInWithPassword(c).then(function(r){
+    if (r.error) throw r.error;
+  }).catch(function(err){ authMsg(authError(err), 'err'); }).then(function(){ $('btn-signin').disabled = false; });
+});
+$('btn-signup').addEventListener('click', function(){
+  var form = $('auth-form');
+  authMsg('', 'err');
+  if (!form.reportValidity()) return;
+  var c = creds();
+  $('btn-signup').disabled = true;
+  sb.auth.signUp({email:c.email, password:c.password, options:{emailRedirectTo:location.origin + location.pathname}}).then(function(r){
+    if (r.error) throw r.error;
+    if (!r.data.session) authMsg('Account created. Check your email for a confirmation link, then sign in.', 'ok');
+  }).catch(function(err){ authMsg(authError(err), 'err'); }).then(function(){ $('btn-signup').disabled = false; });
+});
+$('btn-out').addEventListener('click', function(){
+  sb.auth.signOut().then(function(){}, function(){});
+});
+
 /* ---------- wiring ---------- */
 $('btn-folder').addEventListener('click', askNewFolder);
 $('btn-upload').addEventListener('click', function(){ $('file-input').click(); });
@@ -945,7 +1076,7 @@ function hasFiles(e){
   return !!t && Array.prototype.indexOf.call(t, 'Files') >= 0;
 }
 document.addEventListener('dragenter', function(e){
-  if (!hasFiles(e)) return;
+  if (!hasFiles(e) || !S.ready) return;
   e.preventDefault(); S.dragDepth++; $('drop-hint').hidden = false;
 });
 document.addEventListener('dragover', function(e){
@@ -960,6 +1091,7 @@ document.addEventListener('dragleave', function(e){
 document.addEventListener('drop', function(e){
   if (!hasFiles(e)) return;
   e.preventDefault(); S.dragDepth = 0; $('drop-hint').hidden = true;
+  if (!S.ready) return;
   var where = S.cur;
   var plain = [], dirs = [];
   var items = e.dataTransfer.items;
@@ -983,23 +1115,23 @@ document.addEventListener('drop', function(e){
   });
 });
 
-try {
-  bc = new BroadcastChannel('my-file-folders');
-  bc.onmessage = function(){ loadAll().then(render, function(){}); };
-} catch (e) { bc = null; }
-
-render();
-openDb().then(function(d){
-  idb = d;
-  return loadAll();
-}).then(function(){
-  render();
-  refreshUsage();
-  if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(function(){}); }
-}).catch(function(){
-  S.dbError = 'Your browser blocked local storage, so folders can’t be saved. Private windows often do this. Open the page in a normal window.';
-  render();
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible' && S.userId && S.ready && !uploadsBusy() && $('scrim').hidden) reload(true);
 });
+
+/* ---------- start ---------- */
+var configured = SUPABASE_URL.indexOf('https://') === 0 && SUPABASE_KEY.length > 20 && SUPABASE_KEY.indexOf('PASTE') < 0;
+if (configured && window.supabase && window.supabase.createClient) {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  sb.auth.onAuthStateChange(function(ev, session){
+    setTimeout(function(){ setSession(session); }, 0);
+  });
+  sb.auth.getSession().then(function(r){ setSession(r.data && r.data.session); }, function(){ setSession(null); });
+} else if (configured) {
+  $('setup').querySelector('p').textContent = 'The Supabase library didn’t load. Check your internet connection and reload the page.';
+}
+showScreen();
+render();
 })();
 </script>
 </body>
