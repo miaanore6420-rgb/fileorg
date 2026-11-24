@@ -1,6 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>My File Folders</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: one calm column. Header with storage meter, a toolbar (path, search, actions), folder cards, then a file list. */
@@ -11,6 +14,7 @@
   --danger:#b3261e; --danger-fg:#ffffff; --ok:#1b7a45;
   --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -29,6 +33,8 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
 body{
   background:var(--bg); color:var(--fg); margin:0;
   font-family:var(--font-ui); font-size:15px; line-height:1.45;
@@ -54,7 +60,7 @@ h1{font:600 1.7rem/1.15 var(--font-ui);letter-spacing:-.01em;margin:0}
 .crumb:hover{background:var(--surface-2)}
 .crumb-now{padding:6px 8px;font-weight:600;overflow-wrap:anywhere}
 .sep{color:var(--muted)}
-.tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 380px;justify-content:flex-end}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 420px;justify-content:flex-end}
 .tools .search{flex:1 1 180px;min-width:0}
 input[type=search],input[type=text],select{
   font:inherit;color:var(--fg);background:var(--surface);
@@ -109,7 +115,7 @@ main{display:grid;gap:22px}
 .file:first-child{border-top:0}
 .thumbbox{position:relative;width:44px;height:44px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden;font:600 .68rem var(--font-mono);color:var(--muted)}
 .thumbbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.file-name{color:var(--fg);font-weight:500;text-decoration:none;overflow-wrap:anywhere}
+.file-name{background:none;border:0;padding:0;font:inherit;font-weight:500;text-align:left;color:var(--fg);cursor:pointer;overflow-wrap:anywhere}
 .file-name:hover{color:var(--accent);text-decoration:underline}
 .file-meta{font:.75rem var(--font-mono);color:var(--muted);overflow-wrap:anywhere}
 .row-actions{display:flex;gap:2px}
@@ -124,7 +130,7 @@ main{display:grid;gap:22px}
 .empty{border:1px dashed var(--line);border-radius:12px;padding:38px 20px;text-align:center;display:grid;gap:6px;justify-items:center}
 .empty h2{margin:0;font:600 1.1rem var(--font-ui);letter-spacing:0;text-transform:none;color:var(--fg)}
 .empty p{margin:0;color:var(--muted);max-width:48ch}
-.foot{font:.75rem/1.55 var(--font-mono);color:var(--muted);max-width:70ch}
+.foot{font:.75rem/1.55 var(--font-mono);color:var(--muted);max-width:72ch}
 
 .drop-hint{
   position:fixed;z-index:40;pointer-events:none;
@@ -143,6 +149,8 @@ main{display:grid;gap:22px}
 .field label{font-size:.85rem;font-weight:500}
 .dlg-actions{display:flex;justify-content:flex-end;gap:8px}
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header class="top">
@@ -161,8 +169,10 @@ main{display:grid;gap:22px}
     <div class="tools">
       <label class="search"><span class="sr">Search files and folders</span><input id="q" type="search" placeholder="Search all folders" autocomplete="off"></label>
       <button class="btn" id="btn-folder" type="button">New folder</button>
+      <button class="btn" id="btn-updir" type="button">Upload folder</button>
       <button class="btn primary" id="btn-upload" type="button">Upload files</button>
       <input id="file-input" type="file" multiple hidden>
+      <input id="dir-input" type="file" webkitdirectory multiple hidden>
     </div>
   </div>
 
@@ -191,10 +201,10 @@ main{display:grid;gap:22px}
     <div class="empty" id="empty" hidden></div>
   </main>
 
-  <p class="foot">Stores images, PDFs, videos, text, CSV, Markdown, JSON and fonts, up to 20 MB each (2 MB for SVG). Word, Excel and ZIP files can’t be stored here yet. Drop files anywhere on this page to add them to the folder you’re viewing.</p>
+  <p class="foot">Everything you add is saved in this browser on this device only. It isn’t uploaded anywhere, and clearing your browser’s site data deletes it. Drop files or whole folders anywhere on this page to add them to the folder you’re viewing.</p>
 </div>
 
-<div class="drop-hint" id="drop-hint" hidden>Drop to add files to this folder</div>
+<div class="drop-hint" id="drop-hint" hidden>Drop files or folders to add them here</div>
 
 <div class="scrim" id="scrim" hidden>
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
@@ -221,25 +231,23 @@ main{display:grid;gap:22px}
 'use strict';
 
 var ROOT = 'root';
-var MB = 1024 * 1024;
-var TYPES = {
+var MIME = {
   png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', webp:'image/webp', svg:'image/svg+xml',
-  mp4:'video/mp4', webm:'video/webm', pdf:'application/pdf',
-  woff2:'font/woff2', woff:'font/woff', ttf:'font/ttf', otf:'font/otf',
-  csv:'text/csv', md:'text/markdown', markdown:'text/markdown', json:'application/json', txt:'text/plain',
-  css:'text/css', js:'text/javascript', mjs:'text/javascript'
+  pdf:'application/pdf', mp4:'video/mp4', webm:'video/webm', mp3:'audio/mpeg', wav:'audio/wav',
+  txt:'text/plain', csv:'text/csv', md:'text/markdown', json:'application/json'
 };
+var VIEWABLE = {'application/pdf':1, 'text/plain':1, 'text/csv':1, 'text/markdown':1, 'application/json':1};
 
 var S = {
   folders:{}, files:{}, cur:ROOT, query:'', sort:'name',
-  gotF:false, gotFi:false, slow:false,
-  db:null, dbMissing:false, dbError:'',
-  assets:null, downloads:null, usage:null,
-  uploads:[], dragDepth:0
+  ready:false, dbError:'', usage:null, uploads:[], dragDepth:0
 };
 var uid = 0;
 var noticeTimer = null;
-var loadTimer = null;
+var renderTimer = null;
+var idb = null;
+var bc = null;
+var thumbs = {};
 
 function $(id){ return document.getElementById(id); }
 
@@ -265,7 +273,7 @@ function el(tag, props, kids){
 function plural(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); }
 function fmtBytes(n){
   if (!isFinite(n)) return '';
-  var u = ['B','KB','MB','GB'], i = 0;
+  var u = ['B','KB','MB','GB','TB'], i = 0;
   while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
   return (i === 0 ? String(n) : (n >= 100 ? n.toFixed(0) : n.toFixed(1))) + ' ' + u[i];
 }
@@ -281,6 +289,14 @@ function sorter(kind){
   if (kind === 'new') return function(a, b){ return (b.createdAt - a.createdAt) || cmpName(a, b); };
   if (kind === 'size') return function(a, b){ return (b.size - a.size) || cmpName(a, b); };
   return cmpName;
+}
+function newId(){
+  if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+function scheduleRender(){
+  if (renderTimer) return;
+  renderTimer = setTimeout(function(){ renderTimer = null; render(); }, 120);
 }
 
 var SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
@@ -299,7 +315,79 @@ function icon(name){
   return s;
 }
 function iconBtn(name, label, onclick, cls){
-  return el('button', {class:'ib ' + (cls || ''), type:'button', title:label, 'aria-label':label, onclick:onclick, disabled:!S.db}, [icon(name)]);
+  return el('button', {class:'ib ' + (cls || ''), type:'button', title:label, 'aria-label':label, onclick:onclick, disabled:!S.ready}, [icon(name)]);
+}
+
+/* ---------- browser storage (IndexedDB) ---------- */
+function openDb(){
+  return new Promise(function(res, rej){
+    if (!window.indexedDB) { rej(new Error('no indexedDB')); return; }
+    var r;
+    try { r = indexedDB.open('my-file-folders', 1); } catch (e) { rej(e); return; }
+    r.onupgradeneeded = function(){
+      var d = r.result;
+      d.createObjectStore('folders', {keyPath:'id'});
+      d.createObjectStore('files', {keyPath:'id'});
+      d.createObjectStore('blobs', {keyPath:'id'});
+    };
+    r.onsuccess = function(){ res(r.result); };
+    r.onerror = function(){ rej(r.error || new Error('open failed')); };
+  });
+}
+function run(stores, mode, fn){
+  return new Promise(function(res, rej){
+    var t = idb.transaction(stores, mode), out;
+    t.oncomplete = function(){ res(out && out.result); };
+    t.onerror = function(){ rej(t.error); };
+    t.onabort = function(){ rej(t.error || new Error('aborted')); };
+    out = fn(t);
+  });
+}
+function put(store, rec){ return run([store], 'readwrite', function(t){ return t.objectStore(store).put(rec); }); }
+function all(store){ return run([store], 'readonly', function(t){ return t.objectStore(store).getAll(); }); }
+function getBlob(id){
+  return run(['blobs'], 'readonly', function(t){ return t.objectStore('blobs').get(id); })
+    .then(function(r){ return r && r.blob; });
+}
+function loadAll(){
+  return Promise.all([all('folders'), all('files')]).then(function(r){
+    var f = {}, i = {};
+    r[0].forEach(function(x){ f[x.id] = x; });
+    r[1].forEach(function(x){ i[x.id] = x; });
+    S.folders = f; S.files = i; S.ready = true;
+  });
+}
+function storeErr(e){
+  if (e && (e.name === 'QuotaExceededError' || e.code === 22)) return 'Your browser’s storage is full. Delete something and try again.';
+  return 'That didn’t save. Try again.';
+}
+function changed(){
+  render();
+  refreshUsage();
+  if (bc) { try { bc.postMessage('changed'); } catch (e) {} }
+}
+function patchItem(kind, id, patch){
+  var store = kind === 'folder' ? 'folders' : 'files';
+  var map = kind === 'folder' ? S.folders : S.files;
+  var rec = Object.assign({}, map[id], patch, {id:id});
+  return put(store, rec).then(function(){ map[id] = rec; changed(); });
+}
+function deleteRecords(folderIds, files){
+  return run(['folders', 'files', 'blobs'], 'readwrite', function(t){
+    folderIds.forEach(function(id){ t.objectStore('folders').delete(id); });
+    files.forEach(function(f){ t.objectStore('files').delete(f.id); t.objectStore('blobs').delete(f.id); });
+  }).then(function(){
+    folderIds.forEach(function(id){ delete S.folders[id]; });
+    files.forEach(function(f){ delete S.files[f.id]; dropThumb(f.id); });
+    changed();
+  });
+}
+function refreshUsage(){
+  if (!navigator.storage || !navigator.storage.estimate) return;
+  navigator.storage.estimate().then(function(r){
+    S.usage = {bytes:r.usage || 0, maxBytes:r.quota || 0};
+    renderSummary();
+  }).catch(function(){});
 }
 
 /* ---------- data views ---------- */
@@ -316,7 +404,7 @@ function folderList(){
 function fileList(){
   return Object.keys(S.files).map(function(id){
     var d = S.files[id];
-    return {id:id, name:String(d.name || 'Untitled'), where:parentOf(d.folder), asset:d.asset, size:d.size || 0, type:d.type || '', createdAt:d.createdAt || 0};
+    return {id:id, name:String(d.name || 'Untitled'), where:parentOf(d.folder), size:d.size || 0, type:d.type || '', createdAt:d.createdAt || 0};
   });
 }
 function pathNames(id){
@@ -351,7 +439,7 @@ function uniqueFileName(name, where, batch){
     var dot = name.lastIndexOf('.');
     var base = dot > 0 ? name.slice(0, dot) : name;
     var ext = dot > 0 ? name.slice(dot) : '';
-    for (var i = 2; i < 1000; i++) {
+    for (var i = 2; i < 10000; i++) {
       var c = base + ' (' + i + ')' + ext;
       if (!taken(c)) { out = c; break; }
     }
@@ -363,26 +451,6 @@ function checkName(n){
   if (!n) return 'Enter a name.';
   if (n.length > 120) return 'Use 120 characters or fewer.';
   return '';
-}
-
-/* ---------- messages ---------- */
-function dbMsg(e){
-  var c = e && e.code;
-  if (c === 'quota_exceeded') return 'Storage is full. Delete something and try again.';
-  if (c === 'invalid_argument') return 'This view can’t change your folders. Open the page from your own artifacts.';
-  if (c === 'resource_exhausted' || c === 'rate_limited') return 'Too many changes at once. Wait a moment and try again.';
-  if (c === 'revoked') return 'Your access to this page changed. Reload to continue.';
-  return 'That didn’t save. Try again.';
-}
-function assetMsg(e){
-  var c = e && e.code;
-  if (c === 'too_large') return 'Over the size limit.';
-  if (c === 'unsupported_type') return 'The file’s contents don’t match its type.';
-  if (c === 'quota_or_state') return 'Storage is full.';
-  if (c === 'rate_limited') return 'Too many uploads at once. Try again shortly.';
-  if (c === 'not_granted' || c === 'capability_disabled' || c === 'capability_removed') return 'Uploads aren’t available in this view.';
-  if (c === 'store_unavailable') return 'Storage is busy. Try again.';
-  return 'Upload failed. Try again.';
 }
 function notice(text, kind){
   var n = $('notice');
@@ -481,8 +549,9 @@ function askNewFolder(){
       var err = checkName(v.text);
       if (err) return err;
       if (nameTaken(folderList(), S.cur, v.text)) return 'A folder named “' + v.text + '” already exists here.';
-      return S.db.collection('folders').doc().set({name:v.text, parent:S.cur, createdAt:Date.now()})
-        .then(function(){ return ''; }, dbMsg);
+      var id = newId();
+      var rec = {id:id, name:v.text, parent:S.cur, createdAt:Date.now()};
+      return put('folders', rec).then(function(){ S.folders[id] = rec; changed(); return ''; }, storeErr);
     }
   });
 }
@@ -495,8 +564,7 @@ function askRename(kind, item){
       if (v.text === item.name) return '';
       var list = kind === 'folder' ? folderList() : fileList();
       if (nameTaken(list, item.where, v.text, item.id)) return '“' + v.text + '” already exists in that folder.';
-      return S.db.doc((kind === 'folder' ? 'folders/' : 'files/') + item.id).update({name:v.text})
-        .then(function(){ return ''; }, dbMsg);
+      return patchItem(kind, item.id, {name:v.text}).then(function(){ return ''; }, storeErr);
     }
   });
 }
@@ -515,26 +583,15 @@ function askMove(kind, item){
       var list = kind === 'folder' ? folderList() : fileList();
       if (nameTaken(list, target, item.name, item.id)) return 'There’s already something named “' + item.name + '” in that folder.';
       var patch = kind === 'folder' ? {parent:target} : {folder:target};
-      return S.db.doc((kind === 'folder' ? 'folders/' : 'files/') + item.id).update(patch)
-        .then(function(){ return ''; }, dbMsg);
+      return patchItem(kind, item.id, patch).then(function(){ return ''; }, storeErr);
     }
   });
-}
-function delMsg(e){
-  var c = e && e.code;
-  if (c === 'rate_limited' || c === 'resource_exhausted') return 'Too many changes at once. Wait a moment and try again.';
-  return 'Couldn’t delete that. Try again.';
-}
-function removeFile(f){
-  var step = (S.assets && f.asset) ? S.assets.delete(f.asset) : Promise.resolve();
-  return step.then(function(){ return S.db.doc('files/' + f.id).delete(); })
-    .then(function(){ return ''; }, delMsg);
 }
 function askDeleteFile(f){
   openDialog({
     title:'Delete file', body:'“' + f.name + '” will be permanently deleted. This can’t be undone.',
     okText:'Delete', danger:true,
-    onOk:function(){ return removeFile(f).then(function(err){ if (!err) refreshUsage(); return err; }); }
+    onOk:function(){ return deleteRecords([], [f]).then(function(){ return ''; }, storeErr); }
   });
 }
 function askDeleteFolder(f){
@@ -547,41 +604,61 @@ function askDeleteFolder(f){
   var body = '“' + f.name + '”' + (parts.length ? ' and everything in it (' + parts.join(', ') + ') will be permanently deleted.' : ' will be deleted.') + ' This can’t be undone.';
   openDialog({
     title:'Delete folder', body:body, okText:'Delete', danger:true,
-    onOk:function(){ return removeFolder(ids, inside); }
-  });
-}
-function removeFolder(ids, files){
-  var i = 0, j = 0, fids = Object.keys(ids);
-  function nextFile(){
-    if (i >= files.length) return Promise.resolve();
-    return removeFile(files[i++]).then(function(err){ if (err) throw new Error(err); return nextFile(); });
-  }
-  function nextFolder(){
-    if (j >= fids.length) return Promise.resolve();
-    return S.db.doc('folders/' + fids[j++]).delete().then(nextFolder);
-  }
-  return nextFile().then(nextFolder).then(function(){ refreshUsage(); return ''; }, function(e){
-    refreshUsage();
-    return e && e.message && !e.code ? e.message : delMsg(e);
+    onOk:function(){ return deleteRecords(Object.keys(ids), inside).then(function(){ return ''; }, storeErr); }
   });
 }
 
-function saveFile(f, btn){
-  if (!S.downloads) return;
-  btn.disabled = true;
-  fetch('/_blob/' + f.asset).then(function(r){
-    if (!r.ok) throw new Error('fetch');
-    return r.blob();
-  }).then(function(b){
-    return S.downloads.save({filename:f.name, data:b});
-  }).then(function(){
-    notice('Saved “' + f.name + '”.', 'ok');
-  }, function(e){
-    if (e && e.code === 'declined') return;
-    notice(e && e.code === 'rejected_extension'
-      ? 'This file type can’t be saved from here. Open it and save it from the new tab.'
-      : 'Couldn’t save “' + f.name + '”. Try opening it instead.', 'err');
-  }).then(function(){ btn.disabled = !S.db; });
+/* ---------- opening and saving files ---------- */
+function viewType(f){
+  var t = MIME[extOf(f.name)] || f.type || '';
+  if (t === 'image/svg+xml') return '';
+  if (/^(image|video|audio)\//.test(t) || VIEWABLE[t]) return t;
+  return '';
+}
+function saveFile(f){
+  getBlob(f.id).then(function(b){
+    if (!b) throw new Error('missing');
+    var u = URL.createObjectURL(b);
+    var a = document.createElement('a');
+    a.href = u; a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(u); }, 15000);
+  }).catch(function(){ notice('Couldn’t read “' + f.name + '” from browser storage.', 'err'); });
+}
+function openFile(f){
+  var t = viewType(f);
+  if (!t) { saveFile(f); return; }
+  var w = window.open('', '_blank');
+  if (!w) { saveFile(f); return; }
+  getBlob(f.id).then(function(b){
+    if (!b) throw new Error('missing');
+    w.location.href = URL.createObjectURL(new Blob([b], {type:t}));
+  }).catch(function(){
+    try { w.close(); } catch (e) {}
+    notice('Couldn’t read “' + f.name + '” from browser storage.', 'err');
+  });
+}
+function thumbUrl(f){
+  if (thumbs[f.id]) return Promise.resolve(thumbs[f.id]);
+  return getBlob(f.id).then(function(b){
+    if (!b) return '';
+    var u = URL.createObjectURL(b);
+    thumbs[f.id] = u;
+    return u;
+  });
+}
+function dropThumb(id){
+  if (thumbs[id]) { URL.revokeObjectURL(thumbs[id]); delete thumbs[id]; }
+}
+var io = null;
+if ('IntersectionObserver' in window) {
+  io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (en.isIntersecting) { io.unobserve(en.target); if (en.target._load) en.target._load(); }
+    });
+  });
 }
 
 /* ---------- uploads ---------- */
@@ -590,73 +667,123 @@ function failUpload(it, msg){
   renderUploads();
   return Promise.resolve();
 }
-function uploadOne(file, it, where, batch){
-  var ext = extOf(file.name), type = TYPES[ext];
-  if (!type) return failUpload(it, ext ? '.' + ext + ' files can’t be stored here.' : 'Files without an extension, and whole folders, can’t be stored.');
-  if (file.size === 0) return failUpload(it, 'The file is empty.');
-  var limit = type === 'image/svg+xml' ? 2 * MB : (type === 'text/css' || type === 'text/javascript') ? 16 * MB : 20 * MB;
-  if (file.size > limit) return failUpload(it, 'Over the ' + fmtBytes(limit) + ' limit.');
-  it.status = 'uploading'; it.msg = 'Uploading…';
-  renderUploads();
-  return S.assets.upload(file, {type:type}).then(function(res){
-    var name = uniqueFileName(file.name, where, batch);
-    return S.db.collection('files').doc().set({
-      name:name, folder:where, asset:res.id, size:res.sizeBytes || file.size, type:res.contentType || type, createdAt:Date.now()
-    }).then(function(){
-      it.status = 'done'; it.msg = 'Saved'; renderUploads();
-    }, function(e){
-      return S.assets.delete(res.id).catch(function(){}).then(function(){ return failUpload(it, dbMsg(e)); });
+function ensurePath(where, path, cache){
+  var p = Promise.resolve(where);
+  path.forEach(function(seg){
+    p = p.then(function(parent){
+      var key = parent + '|' + seg.toLowerCase();
+      if (cache[key]) return cache[key];
+      var ex = folderList().filter(function(f){ return f.where === parent && f.name.toLowerCase() === seg.toLowerCase(); })[0];
+      if (ex) { cache[key] = ex.id; return ex.id; }
+      var id = newId();
+      var rec = {id:id, name:seg, parent:parent, createdAt:Date.now()};
+      return put('folders', rec).then(function(){ S.folders[id] = rec; cache[key] = id; return id; });
     });
-  }, function(e){ return failUpload(it, assetMsg(e)); });
+  });
+  return p;
 }
-function uploadAll(files, where){
-  if (!files.length) return;
-  if (!S.assets || !S.db) { notice('Uploads aren’t available in this view.', 'err'); return; }
-  var batch = {};
-  var items = files.map(function(f){
-    var it = {id:++uid, name:f.name, status:'waiting', msg:'Waiting'};
+function uploadOne(x, it, where, batch, cache){
+  var file = x.file;
+  if (file.size === 0) return failUpload(it, 'The file is empty.');
+  it.status = 'uploading'; it.msg = 'Saving…';
+  renderUploads();
+  return ensurePath(where, x.path, cache).then(function(fid){
+    var name = uniqueFileName(file.name, fid, batch);
+    var id = newId();
+    var rec = {id:id, name:name, folder:fid, size:file.size, type:file.type || MIME[extOf(file.name)] || 'application/octet-stream', createdAt:Date.now()};
+    return run(['files', 'blobs'], 'readwrite', function(t){
+      t.objectStore('files').put(rec);
+      t.objectStore('blobs').put({id:id, blob:file});
+    }).then(function(){
+      S.files[id] = rec;
+      it.status = 'done'; it.msg = 'Saved';
+      renderUploads(); scheduleRender();
+    });
+  }).catch(function(e){ return failUpload(it, storeErr(e)); });
+}
+function uploadAll(entries, where){
+  if (!entries.length) return;
+  if (!S.ready) { notice('Storage isn’t ready yet.', 'err'); return; }
+  var batch = {}, cache = {};
+  var items = entries.filter(function(x){ return x.file; }).map(function(x){
+    var it = {id:++uid, name:x.path.concat(x.file.name).join('/'), status:'waiting', msg:'Waiting'};
     S.uploads.push(it);
-    return {file:f, it:it};
+    return {x:x, it:it};
   });
   renderUploads();
   var chain = Promise.resolve();
-  items.forEach(function(x){ chain = chain.then(function(){ return uploadOne(x.file, x.it, where, batch); }); });
+  entries.filter(function(x){ return !x.file; }).forEach(function(x){
+    chain = chain.then(function(){ return ensurePath(where, x.path, cache); });
+  });
+  items.forEach(function(p){
+    chain = chain.then(function(){ return uploadOne(p.x, p.it, where, batch, cache); });
+  });
   chain.then(function(){
-    refreshUsage();
+    changed();
     setTimeout(function(){
       S.uploads = S.uploads.filter(function(it){ return it.status !== 'done'; });
       renderUploads();
     }, 4000);
+  }, function(e){ notice(storeErr(e), 'err'); changed(); });
+}
+function fromInput(list){
+  return Array.prototype.slice.call(list || []).map(function(f){
+    var rel = f.webkitRelativePath || '';
+    var parts = rel ? rel.split('/').slice(0, -1) : [];
+    return {file:f, path:parts};
   });
 }
-function refreshUsage(){
-  if (!S.assets) return;
-  S.assets.list().then(function(r){ S.usage = r.usage; renderSummary(); }, function(){});
+function readAllEntries(reader){
+  return new Promise(function(res, rej){
+    var out = [];
+    (function next(){
+      reader.readEntries(function(batch){
+        if (!batch.length) res(out);
+        else { out = out.concat(Array.prototype.slice.call(batch)); next(); }
+      }, rej);
+    })();
+  });
+}
+function walk(entry, path, out){
+  if (entry.isFile) {
+    return new Promise(function(res){
+      entry.file(function(f){ out.push({file:f, path:path}); res(); }, function(){ res(); });
+    });
+  }
+  if (entry.isDirectory) {
+    var here = path.concat(entry.name);
+    out.push({file:null, path:here});
+    return readAllEntries(entry.createReader()).then(function(list){
+      var p = Promise.resolve();
+      list.forEach(function(c){ p = p.then(function(){ return walk(c, here, out); }); });
+      return p;
+    });
+  }
+  return Promise.resolve();
 }
 
 /* ---------- rendering ---------- */
 function renderBanner(){
   var b = $('banner');
-  var msg = S.dbError || (S.dbMissing ? 'Storage isn’t available in this view, so folders can’t load or save. Open this page from your Claude artifacts while signed in.' : '');
-  b.textContent = msg;
-  b.hidden = !msg;
+  b.textContent = S.dbError;
+  b.hidden = !S.dbError;
 }
 function renderControls(){
-  var ready = !!S.db && S.gotF && S.gotFi && !S.dbError;
-  $('btn-folder').disabled = !ready;
-  $('btn-upload').disabled = !ready || !S.assets;
+  $('btn-folder').disabled = !S.ready;
+  $('btn-upload').disabled = !S.ready;
+  $('btn-updir').disabled = !S.ready;
 }
 function renderSummary(){
   var s = $('summary');
-  if (S.dbMissing) s.textContent = 'Storage unavailable';
-  else if (!(S.gotF && S.gotFi)) s.textContent = 'Loading…';
+  if (S.dbError) s.textContent = 'Storage unavailable';
+  else if (!S.ready) s.textContent = 'Loading…';
   else s.textContent = plural(Object.keys(S.files).length, 'file') + ' in ' + plural(Object.keys(S.folders).length, 'folder');
   var m = $('meter');
   if (S.usage && S.usage.maxBytes) {
     m.hidden = false;
     var pct = Math.min(100, Math.round(S.usage.bytes / S.usage.maxBytes * 100));
     $('meter-bar').style.width = Math.max(pct, S.usage.bytes > 0 ? 2 : 0) + '%';
-    $('meter-text').textContent = fmtBytes(S.usage.bytes) + ' of ' + fmtBytes(S.usage.maxBytes) + ' used';
+    $('meter-text').textContent = 'Browser storage: ' + fmtBytes(S.usage.bytes) + ' of ' + fmtBytes(S.usage.maxBytes) + ' used';
   } else m.hidden = true;
 }
 function renderCrumbs(){
@@ -694,28 +821,33 @@ function folderCard(f, counts, showWhere){
   ]);
 }
 function fileRow(f, showWhere){
-  var url = '/_blob/' + f.asset;
   var ext = extOf(f.name);
   var box = el('span', {class:'thumbbox', 'aria-hidden':'true'}, [ext ? ext.slice(0, 4).toUpperCase() : 'FILE']);
-  if (/^image\//.test(f.type)) {
-    var img = el('img', {src:url, alt:'', loading:'lazy', decoding:'async'});
-    img.addEventListener('error', function(){ img.remove(); });
-    box.appendChild(img);
+  if (/^image\//.test(f.type) && f.size <= 15 * 1024 * 1024) {
+    box._load = function(){
+      thumbUrl(f).then(function(u){
+        if (!u) return;
+        var img = el('img', {src:u, alt:''});
+        img.addEventListener('error', function(){ img.remove(); });
+        box.appendChild(img);
+      });
+    };
+    if (io) io.observe(box); else box._load();
   }
   var meta = [fmtBytes(f.size), fmtDate(f.createdAt)].filter(Boolean);
   if (showWhere) meta.push(locationText(f.where));
-  var actions = [];
-  if (S.downloads) actions.push(iconBtn('download', 'Save to this device', function(e){ saveFile(f, e.currentTarget); }));
-  actions.push(iconBtn('rename', 'Rename file', function(){ askRename('file', f); }));
-  actions.push(iconBtn('move', 'Move file', function(){ askMove('file', f); }));
-  actions.push(iconBtn('trash', 'Delete file', function(){ askDeleteFile(f); }, 'del'));
   return el('div', {class:'file'}, [
     box,
     el('div', {}, [
-      el('a', {class:'file-name', href:url, target:'_blank', rel:'noopener', text:f.name}),
+      el('button', {class:'file-name', type:'button', text:f.name, onclick:function(){ openFile(f); }}),
       el('div', {class:'file-meta', text:meta.join(' · ')})
     ]),
-    el('div', {class:'row-actions'}, actions)
+    el('div', {class:'row-actions'}, [
+      iconBtn('download', 'Save to this device', function(){ saveFile(f); }),
+      iconBtn('rename', 'Rename file', function(){ askRename('file', f); }),
+      iconBtn('move', 'Move file', function(){ askMove('file', f); }),
+      iconBtn('trash', 'Delete file', function(){ askDeleteFile(f); }, 'del')
+    ])
   ]);
 }
 function setEmpty(title, body){
@@ -744,27 +876,26 @@ function renderList(){
   $('folders-sec').hidden = !folders.length;
   $('files-sec').hidden = !files.length;
 
-  var empty = $('empty');
-  empty.hidden = true;
+  $('empty').hidden = true;
   if (folders.length || files.length) return;
-  if (S.dbMissing || S.dbError) { setEmpty('Nothing to show', 'Your folders will appear here once storage is available.'); return; }
-  if (!(S.gotF && S.gotFi)) {
-    setEmpty(S.slow ? 'Still waiting for your folders' : 'Loading your folders…', S.slow ? 'Check your connection. They will appear as soon as storage answers.' : '');
-    return;
-  }
+  if (S.dbError) { setEmpty('Nothing to show', 'Your folders will appear here once browser storage is available.'); return; }
+  if (!S.ready) { setEmpty('Loading your folders…', ''); return; }
   if (searching) { setEmpty('No matches', 'Nothing is named “' + S.query.trim() + '”. Try a shorter search.'); return; }
-  if (!fl.length && !fi.length) { setEmpty('No folders yet', 'Make a folder for each project, then drop files into it. Anything you drop on this page goes into the folder you’re viewing.'); return; }
+  if (!fl.length && !fi.length) { setEmpty('No folders yet', 'Make a folder for each project, then drop files or whole folders into it. Anything you drop on this page goes into the folder you’re viewing.'); return; }
   setEmpty('This folder is empty', 'Drop files here, or choose Upload files.');
 }
 function renderUploads(){
   var box = $('uploads');
   box.textContent = '';
+  var done = 0, waiting = 0;
   S.uploads.forEach(function(it){
+    if (it.status === 'done') { done++; return; }
+    if (it.status === 'waiting') { waiting++; if (waiting > 4) return; }
     var kids = [
       el('span', {class:'un', text:it.name}),
       el('span', {class:'us', text:it.msg})
     ];
-    if (it.status === 'error' || it.status === 'done') {
+    if (it.status === 'error') {
       kids.push(el('button', {class:'ib', type:'button', title:'Dismiss', 'aria-label':'Dismiss', onclick:function(){
         S.uploads = S.uploads.filter(function(x){ return x !== it; });
         renderUploads();
@@ -772,9 +903,11 @@ function renderUploads(){
     }
     box.appendChild(el('div', {class:'up ' + it.status}, kids));
   });
+  if (waiting > 4) box.appendChild(el('div', {class:'up'}, [el('span', {class:'un', text:'and ' + (waiting - 4) + ' more waiting'})]));
+  if (done) box.appendChild(el('div', {class:'up done'}, [el('span', {class:'un', text:'Saved ' + plural(done, 'file')}), el('span', {class:'us', text:'Done'})]));
 }
 function render(){
-  if (S.cur !== ROOT && S.gotF && !S.folders[S.cur]) S.cur = ROOT;
+  if (S.cur !== ROOT && S.ready && !S.folders[S.cur]) S.cur = ROOT;
   renderBanner();
   renderControls();
   renderSummary();
@@ -786,9 +919,16 @@ function render(){
 /* ---------- wiring ---------- */
 $('btn-folder').addEventListener('click', askNewFolder);
 $('btn-upload').addEventListener('click', function(){ $('file-input').click(); });
+$('btn-updir').addEventListener('click', function(){ $('dir-input').click(); });
 $('file-input').addEventListener('change', function(){
-  var list = Array.prototype.slice.call(this.files || []);
+  var list = fromInput(this.files);
   this.value = '';
+  uploadAll(list, S.cur);
+});
+$('dir-input').addEventListener('change', function(){
+  var list = fromInput(this.files);
+  this.value = '';
+  if (!list.length) { notice('That folder has no files in it.', 'err'); return; }
   uploadAll(list, S.cur);
 });
 $('q').addEventListener('input', function(){
@@ -820,46 +960,47 @@ document.addEventListener('dragleave', function(e){
 document.addEventListener('drop', function(e){
   if (!hasFiles(e)) return;
   e.preventDefault(); S.dragDepth = 0; $('drop-hint').hidden = true;
-  uploadAll(Array.prototype.slice.call(e.dataTransfer.files || []), S.cur);
+  var where = S.cur;
+  var plain = [], dirs = [];
+  var items = e.dataTransfer.items;
+  if (items && items.length) {
+    for (var i = 0; i < items.length; i++) {
+      var en = items[i].webkitGetAsEntry ? items[i].webkitGetAsEntry() : null;
+      if (en) dirs.push(en);
+      else if (items[i].kind === 'file') {
+        var f = items[i].getAsFile();
+        if (f) plain.push({file:f, path:[]});
+      }
+    }
+  } else {
+    plain = fromInput(e.dataTransfer.files);
+  }
+  var out = [];
+  var p = Promise.resolve();
+  dirs.forEach(function(en){ p = p.then(function(){ return walk(en, [], out); }); });
+  p.then(function(){ uploadAll(plain.concat(out), where); }, function(){
+    notice('Couldn’t read the dropped folder. Try “Upload folder” instead.', 'err');
+  });
 });
 
-function onErr(e){
-  S.dbError = e && e.code === 'revoked'
-    ? 'Your access to this page changed. Reload to continue.'
-    : 'Your folders couldn’t be loaded. Reload the page to try again.';
-  render();
-}
-function afterSnap(){
-  if (S.gotF && S.gotFi) { clearTimeout(loadTimer); S.slow = false; }
-  render();
-}
-function startDb(db){
-  S.db = db;
-  loadTimer = setTimeout(function(){ if (!(S.gotF && S.gotFi)) { S.slow = true; render(); } }, 10000);
-  db.collection('folders').onSnapshot(function(snap){
-    var m = {};
-    snap.docs.forEach(function(d){ if (d.exists) m[d.id] = d.data(); });
-    S.folders = m; S.gotF = true; afterSnap();
-  }, onErr);
-  db.collection('files').onSnapshot(function(snap){
-    var m = {};
-    snap.docs.forEach(function(d){ if (d.exists) m[d.id] = d.data(); });
-    S.files = m; S.gotFi = true; afterSnap();
-  }, onErr);
-}
-function use(name){
-  if (!window.claude || !window.claude.use) return Promise.resolve(null);
-  return window.claude.use(name).then(function(x){ return x || null; }, function(){ return null; });
-}
+try {
+  bc = new BroadcastChannel('my-file-folders');
+  bc.onmessage = function(){ loadAll().then(render, function(){}); };
+} catch (e) { bc = null; }
 
 render();
-use('db').then(function(db){
-  if (!db) { S.dbMissing = true; render(); return; }
-  startDb(db);
+openDb().then(function(d){
+  idb = d;
+  return loadAll();
+}).then(function(){
+  render();
+  refreshUsage();
+  if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(function(){}); }
+}).catch(function(){
+  S.dbError = 'Your browser blocked local storage, so folders can’t be saved. Private windows often do this. Open the page in a normal window.';
+  render();
 });
-use('assets').then(function(a){ S.assets = a; render(); refreshUsage(); });
-use('downloads').then(function(d){ S.downloads = d; render(); });
 })();
 </script>
-
-</body></html>
+</body>
+</html>
