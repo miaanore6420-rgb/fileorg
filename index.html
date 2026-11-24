@@ -1,1 +1,865 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>My File Folders</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one calm column. Header with storage meter, a toolbar (path, search, actions), folder cards, then a file list. */
+:root{
+  --bg:#f2f5f3; --surface:#fbfcfb; --surface-2:#e6ece9; --line:#d2dad6;
+  --fg:#16201c; --muted:#58675f; --accent:#0e6a58; --accent-fg:#ffffff;
+  --folder:#d39a2a; --folder-tab:#b8821a;
+  --danger:#b3261e; --danger-fg:#ffffff; --ok:#1b7a45;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1512; --surface:#161e1a; --surface-2:#1f2924; --line:#2c3832;
+    --fg:#e4ebe7; --muted:#93a39b; --accent:#52c4a8; --accent-fg:#06231c;
+    --folder:#e0ac45; --folder-tab:#c4922f;
+    --danger:#f07a70; --danger-fg:#2a0805; --ok:#5fcf8f;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1512; --surface:#161e1a; --surface-2:#1f2924; --line:#2c3832;
+  --fg:#e4ebe7; --muted:#93a39b; --accent:#52c4a8; --accent-fg:#06231c;
+  --folder:#e0ac45; --folder-tab:#c4922f;
+  --danger:#f07a70; --danger-fg:#2a0805; --ok:#5fcf8f;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg); margin:0;
+  font-family:var(--font-ui); font-size:15px; line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:22px 56px;
+}
+.wrap{max-width:960px;margin:0 auto;display:grid;gap:16px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px}
+h1{font:600 1.7rem/1.15 var(--font-ui);letter-spacing:-.01em;margin:0}
+.sub{margin:5px 0 0;color:var(--muted);font:.8rem var(--font-mono)}
+.meter{flex:0 1 260px;min-width:200px;display:grid;gap:5px}
+.meter-track{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.meter-bar{display:block;height:100%;width:0;background:var(--accent)}
+.meter-text{font:.75rem var(--font-mono);color:var(--muted)}
+
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding-block:10px;border-block:1px solid var(--line)}
+#crumbs{display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-width:0}
+.crumb{background:none;border:0;padding:6px 8px;border-radius:6px;color:var(--accent);font:inherit;cursor:pointer}
+.crumb:hover{background:var(--surface-2)}
+.crumb-now{padding:6px 8px;font-weight:600;overflow-wrap:anywhere}
+.sep{color:var(--muted)}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1 1 380px;justify-content:flex-end}
+.tools .search{flex:1 1 180px;min-width:0}
+input[type=search],input[type=text],select{
+  font:inherit;color:var(--fg);background:var(--surface);
+  border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:38px;width:100%;
+}
+select{width:auto}
+.btn{font:inherit;font-weight:500;border-radius:8px;padding:8px 14px;min-height:38px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn:hover:not(:disabled){background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:var(--danger-fg)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.notice{padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:.9rem}
+.notice.err{border-color:var(--danger);color:var(--danger)}
+.notice.ok{border-color:var(--ok);color:var(--ok)}
+
+.uploads{display:grid;gap:6px}
+.up{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:.88rem}
+.up .un{min-width:0;overflow-wrap:anywhere}
+.up .us{max-width:55%;text-align:right;font:.75rem var(--font-mono);color:var(--muted)}
+.up.error .us{color:var(--danger)}
+.up.done .us{color:var(--ok)}
+.up .ib{flex:none}
+
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+section h2{margin:0;font:600 .78rem var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sort{display:flex;align-items:center;gap:8px;font:.78rem var(--font-mono);color:var(--muted)}
+.sort select{min-height:32px;padding:4px 8px;font-size:.85rem}
+main{display:grid;gap:22px}
+
+.folders{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.folder{display:grid;grid-template-rows:1fr auto;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.folder:hover{border-color:var(--accent)}
+.folder-open{
+  display:grid;grid-template-columns:44px minmax(0,1fr);grid-template-areas:"i n" "i m";
+  column-gap:12px;align-items:center;text-align:left;background:none;border:0;
+  padding:14px 14px 8px;color:inherit;font:inherit;cursor:pointer;border-radius:10px 10px 0 0;
+}
+.folder-open .ic-folder{grid-area:i}
+.f-name{grid-area:n;font-weight:600;overflow-wrap:anywhere}
+.f-meta{grid-area:m;font:.75rem var(--font-mono);color:var(--muted);overflow-wrap:anywhere}
+.folder-actions{display:flex;justify-content:flex-end;gap:2px;padding:0 6px 6px}
+.ic{display:inline-block;width:20px;height:20px}
+.ic svg{display:block;width:100%;height:100%}
+.ic-folder{width:44px;height:36px}
+.fd{fill:var(--folder)}
+.fd2{fill:var(--folder-tab)}
+
+.files{display:grid;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.file{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+.file:first-child{border-top:0}
+.thumbbox{position:relative;width:44px;height:44px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden;font:600 .68rem var(--font-mono);color:var(--muted)}
+.thumbbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.file-name{color:var(--fg);font-weight:500;text-decoration:none;overflow-wrap:anywhere}
+.file-name:hover{color:var(--accent);text-decoration:underline}
+.file-meta{font:.75rem var(--font-mono);color:var(--muted);overflow-wrap:anywhere}
+.row-actions{display:flex;gap:2px}
+@media (max-width:540px){
+  .row-actions{grid-column:2 / -1;justify-self:start;margin-left:-8px}
+}
+.ib{width:36px;height:36px;display:inline-grid;place-items:center;border:0;background:none;color:var(--muted);border-radius:8px;cursor:pointer}
+.ib:hover:not(:disabled){background:var(--surface-2);color:var(--fg)}
+.ib.del:hover:not(:disabled){color:var(--danger)}
+.ib:disabled{opacity:.4;cursor:not-allowed}
+
+.empty{border:1px dashed var(--line);border-radius:12px;padding:38px 20px;text-align:center;display:grid;gap:6px;justify-items:center}
+.empty h2{margin:0;font:600 1.1rem var(--font-ui);letter-spacing:0;text-transform:none;color:var(--fg)}
+.empty p{margin:0;color:var(--muted);max-width:48ch}
+.foot{font:.75rem/1.55 var(--font-mono);color:var(--muted);max-width:70ch}
+
+.drop-hint{
+  position:fixed;z-index:40;pointer-events:none;
+  top:calc(12px + env(safe-area-inset-top,0px));bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));
+  display:grid;place-items:center;border:2px dashed var(--accent);border-radius:14px;
+  background:var(--surface);background:color-mix(in srgb,var(--accent) 12%,var(--bg));
+  font-weight:600;color:var(--accent);
+}
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(8,12,10,.55);display:grid;place-items:center;padding:16px}
+.dialog{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:grid;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.28)}
+.dialog h3{margin:0;font:600 1.1rem var(--font-ui)}
+.dialog p{margin:0;color:var(--muted);overflow-wrap:anywhere}
+.dialog .err{color:var(--danger);font-size:.88rem}
+.field{display:grid;gap:6px}
+.field label{font-size:.85rem;font-weight:500}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>My File Folders</h1>
+      <p class="sub" id="summary">Loading…</p>
+    </div>
+    <div class="meter" id="meter" hidden>
+      <div class="meter-track"><span class="meter-bar" id="meter-bar"></span></div>
+      <div class="meter-text" id="meter-text"></div>
+    </div>
+  </header>
+
+  <div class="bar">
+    <nav id="crumbs" aria-label="Folder path"></nav>
+    <div class="tools">
+      <label class="search"><span class="sr">Search files and folders</span><input id="q" type="search" placeholder="Search all folders" autocomplete="off"></label>
+      <button class="btn" id="btn-folder" type="button">New folder</button>
+      <button class="btn primary" id="btn-upload" type="button">Upload files</button>
+      <input id="file-input" type="file" multiple hidden>
+    </div>
+  </div>
+
+  <div class="notice err" id="banner" role="alert" hidden></div>
+  <div class="notice" id="notice" role="status" hidden></div>
+  <div class="uploads" id="uploads" aria-live="polite"></div>
+
+  <main>
+    <section id="folders-sec" hidden>
+      <div class="sec-head"><h2>Folders</h2></div>
+      <div class="folders" id="folders"></div>
+    </section>
+    <section id="files-sec" hidden>
+      <div class="sec-head">
+        <h2>Files</h2>
+        <label class="sort">Sort
+          <select id="sort">
+            <option value="name">Name</option>
+            <option value="new">Newest</option>
+            <option value="size">Largest</option>
+          </select>
+        </label>
+      </div>
+      <div class="files" id="files"></div>
+    </section>
+    <div class="empty" id="empty" hidden></div>
+  </main>
+
+  <p class="foot">Stores images, PDFs, videos, text, CSV, Markdown, JSON and fonts, up to 20 MB each (2 MB for SVG). Word, Excel and ZIP files can’t be stored here yet. Drop files anywhere on this page to add them to the folder you’re viewing.</p>
+</div>
+
+<div class="drop-hint" id="drop-hint" hidden>Drop to add files to this folder</div>
+
+<div class="scrim" id="scrim" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+    <h3 id="dlg-title"></h3>
+    <p id="dlg-body" hidden></p>
+    <div class="field" id="dlg-input-row" hidden>
+      <label id="dlg-input-label" for="dlg-input"></label>
+      <input id="dlg-input" type="text" maxlength="120" autocomplete="off">
+    </div>
+    <div class="field" id="dlg-select-row" hidden>
+      <label id="dlg-select-label" for="dlg-select"></label>
+      <select id="dlg-select"></select>
+    </div>
+    <p class="err" id="dlg-error" role="alert" hidden></p>
+    <div class="dlg-actions">
+      <button class="btn" id="dlg-cancel" type="button">Cancel</button>
+      <button class="btn primary" id="dlg-ok" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var ROOT = 'root';
+var MB = 1024 * 1024;
+var TYPES = {
+  png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', webp:'image/webp', svg:'image/svg+xml',
+  mp4:'video/mp4', webm:'video/webm', pdf:'application/pdf',
+  woff2:'font/woff2', woff:'font/woff', ttf:'font/ttf', otf:'font/otf',
+  csv:'text/csv', md:'text/markdown', markdown:'text/markdown', json:'application/json', txt:'text/plain',
+  css:'text/css', js:'text/javascript', mjs:'text/javascript'
+};
+
+var S = {
+  folders:{}, files:{}, cur:ROOT, query:'', sort:'name',
+  gotF:false, gotFi:false, slow:false,
+  db:null, dbMissing:false, dbError:'',
+  assets:null, downloads:null, usage:null,
+  uploads:[], dragDepth:0
+};
+var uid = 0;
+var noticeTimer = null;
+var loadTimer = null;
+
+function $(id){ return document.getElementById(id); }
+
+/* ---------- helpers ---------- */
+function el(tag, props, kids){
+  var n = document.createElement(tag);
+  if (props) {
+    Object.keys(props).forEach(function(k){
+      var v = props[k];
+      if (v == null || v === false) return;
+      if (k === 'class') n.className = v;
+      else if (k === 'text') n.textContent = v;
+      else if (k.slice(0,2) === 'on') n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v === true ? '' : String(v));
+    });
+  }
+  (kids || []).forEach(function(c){
+    if (c == null || c === false) return;
+    n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  });
+  return n;
+}
+function plural(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); }
+function fmtBytes(n){
+  if (!isFinite(n)) return '';
+  var u = ['B','KB','MB','GB'], i = 0;
+  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+  return (i === 0 ? String(n) : (n >= 100 ? n.toFixed(0) : n.toFixed(1))) + ' ' + u[i];
+}
+var dateFmt = null;
+try { dateFmt = new Intl.DateTimeFormat(undefined, {day:'numeric', month:'short', year:'numeric'}); } catch (e) {}
+function fmtDate(ms){
+  if (!ms) return '';
+  try { return dateFmt ? dateFmt.format(new Date(ms)) : new Date(ms).toDateString(); } catch (e) { return ''; }
+}
+function extOf(name){ var m = /\.([A-Za-z0-9]+)$/.exec(name || ''); return m ? m[1].toLowerCase() : ''; }
+function cmpName(a, b){ return (a.name || '').localeCompare(b.name || '', undefined, {numeric:true, sensitivity:'base'}); }
+function sorter(kind){
+  if (kind === 'new') return function(a, b){ return (b.createdAt - a.createdAt) || cmpName(a, b); };
+  if (kind === 'size') return function(a, b){ return (b.size - a.size) || cmpName(a, b); };
+  return cmpName;
+}
+
+var SVG_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+var ICONS = {
+  folder: '<svg viewBox="0 0 44 36" aria-hidden="true"><path class="fd2" d="M3 6a3 3 0 0 1 3-3h11l4 4h17a3 3 0 0 1 3 3v3H3z"/><path class="fd" d="M3 11a3 3 0 0 1 3-3h32a3 3 0 0 1 3 3v19a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/></svg>',
+  rename: SVG_OPEN + '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+  move: SVG_OPEN + '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 13h6m-2.5-2.5L15 13l-2.5 2.5"/></svg>',
+  trash: SVG_OPEN + '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>',
+  download: SVG_OPEN + '<path d="M12 4v11m-4-4l4 4 4-4M5 20h14"/></svg>',
+  close: SVG_OPEN + '<path d="M6 6l12 12M18 6L6 18"/></svg>'
+};
+function icon(name){
+  var s = document.createElement('span');
+  s.className = 'ic' + (name === 'folder' ? ' ic-folder' : '');
+  s.innerHTML = ICONS[name];
+  return s;
+}
+function iconBtn(name, label, onclick, cls){
+  return el('button', {class:'ib ' + (cls || ''), type:'button', title:label, 'aria-label':label, onclick:onclick, disabled:!S.db}, [icon(name)]);
+}
+
+/* ---------- data views ---------- */
+function parentOf(p){
+  if (!p || p === ROOT) return ROOT;
+  return S.folders[p] ? p : ROOT;
+}
+function folderList(){
+  return Object.keys(S.folders).map(function(id){
+    var d = S.folders[id];
+    return {id:id, name:String(d.name || 'Untitled'), where:parentOf(d.parent), createdAt:d.createdAt || 0, size:0};
+  });
+}
+function fileList(){
+  return Object.keys(S.files).map(function(id){
+    var d = S.files[id];
+    return {id:id, name:String(d.name || 'Untitled'), where:parentOf(d.folder), asset:d.asset, size:d.size || 0, type:d.type || '', createdAt:d.createdAt || 0};
+  });
+}
+function pathNames(id){
+  var out = [], seen = {};
+  while (id && id !== ROOT && !seen[id] && S.folders[id]) {
+    seen[id] = 1;
+    out.unshift(String(S.folders[id].name || 'Untitled'));
+    id = parentOf(S.folders[id].parent);
+  }
+  return out;
+}
+function descendantIds(id){
+  var all = folderList(), out = {}, stack = [id];
+  out[id] = 1;
+  while (stack.length) {
+    var cur = stack.pop();
+    all.forEach(function(f){
+      if (f.where === cur && !out[f.id]) { out[f.id] = 1; stack.push(f.id); }
+    });
+  }
+  return out;
+}
+function nameTaken(list, where, name, exceptId){
+  var low = name.toLowerCase();
+  return list.some(function(x){ return x.id !== exceptId && x.where === where && x.name.toLowerCase() === low; });
+}
+function uniqueFileName(name, where, batch){
+  var files = fileList();
+  function taken(n){ return nameTaken(files, where, n) || batch[where + '|' + n.toLowerCase()]; }
+  var out = name;
+  if (taken(out)) {
+    var dot = name.lastIndexOf('.');
+    var base = dot > 0 ? name.slice(0, dot) : name;
+    var ext = dot > 0 ? name.slice(dot) : '';
+    for (var i = 2; i < 1000; i++) {
+      var c = base + ' (' + i + ')' + ext;
+      if (!taken(c)) { out = c; break; }
+    }
+  }
+  batch[where + '|' + out.toLowerCase()] = 1;
+  return out;
+}
+function checkName(n){
+  if (!n) return 'Enter a name.';
+  if (n.length > 120) return 'Use 120 characters or fewer.';
+  return '';
+}
+
+/* ---------- messages ---------- */
+function dbMsg(e){
+  var c = e && e.code;
+  if (c === 'quota_exceeded') return 'Storage is full. Delete something and try again.';
+  if (c === 'invalid_argument') return 'This view can’t change your folders. Open the page from your own artifacts.';
+  if (c === 'resource_exhausted' || c === 'rate_limited') return 'Too many changes at once. Wait a moment and try again.';
+  if (c === 'revoked') return 'Your access to this page changed. Reload to continue.';
+  return 'That didn’t save. Try again.';
+}
+function assetMsg(e){
+  var c = e && e.code;
+  if (c === 'too_large') return 'Over the size limit.';
+  if (c === 'unsupported_type') return 'The file’s contents don’t match its type.';
+  if (c === 'quota_or_state') return 'Storage is full.';
+  if (c === 'rate_limited') return 'Too many uploads at once. Try again shortly.';
+  if (c === 'not_granted' || c === 'capability_disabled' || c === 'capability_removed') return 'Uploads aren’t available in this view.';
+  if (c === 'store_unavailable') return 'Storage is busy. Try again.';
+  return 'Upload failed. Try again.';
+}
+function notice(text, kind){
+  var n = $('notice');
+  n.textContent = text || '';
+  n.className = 'notice' + (kind ? ' ' + kind : '');
+  n.hidden = !text;
+  clearTimeout(noticeTimer);
+  if (text && kind !== 'err') noticeTimer = setTimeout(function(){ notice(''); }, 6000);
+}
+
+/* ---------- dialog ---------- */
+var dlg = {opener:null, onOk:null};
+function openDialog(o){
+  dlg.opener = document.activeElement;
+  dlg.onOk = o.onOk;
+  $('dlg-title').textContent = o.title;
+  var b = $('dlg-body');
+  b.textContent = o.body || '';
+  b.hidden = !o.body;
+  var hasIn = !!o.input, hasSel = !!o.select;
+  $('dlg-input-row').hidden = !hasIn;
+  $('dlg-select-row').hidden = !hasSel;
+  if (hasIn) { $('dlg-input-label').textContent = o.input.label; $('dlg-input').value = o.input.value || ''; }
+  var sel = $('dlg-select');
+  if (hasSel) {
+    $('dlg-select-label').textContent = o.select.label;
+    sel.textContent = '';
+    o.select.options.forEach(function(op){
+      var oe = document.createElement('option');
+      oe.value = op.value; oe.textContent = op.label;
+      sel.appendChild(oe);
+    });
+    sel.value = o.select.value;
+  }
+  var ok = $('dlg-ok');
+  ok.textContent = o.okText || 'OK';
+  ok.className = o.danger ? 'btn danger' : 'btn primary';
+  ok.disabled = false;
+  $('dlg-cancel').disabled = false;
+  $('dlg-error').hidden = true;
+  $('scrim').hidden = false;
+  if (hasIn) { $('dlg-input').focus(); $('dlg-input').select(); }
+  else if (hasSel) sel.focus();
+  else ok.focus();
+}
+function closeDialog(){
+  $('scrim').hidden = true;
+  dlg.onOk = null;
+  var o = dlg.opener;
+  dlg.opener = null;
+  if (o && o.focus && document.contains(o)) o.focus();
+}
+function runDialog(){
+  var f = dlg.onOk;
+  if (!f) return;
+  var ok = $('dlg-ok'), cancel = $('dlg-cancel');
+  ok.disabled = true; cancel.disabled = true;
+  var vals = {text:$('dlg-input').value.trim(), choice:$('dlg-select').value};
+  function fail(msg){
+    var er = $('dlg-error');
+    er.textContent = msg;
+    er.hidden = false;
+    ok.disabled = false; cancel.disabled = false;
+  }
+  Promise.resolve().then(function(){ return f(vals); }).then(function(err){
+    if (err) fail(err); else closeDialog();
+  }, function(){ fail('Something went wrong. Try again.'); });
+}
+$('dlg-ok').addEventListener('click', runDialog);
+$('dlg-cancel').addEventListener('click', closeDialog);
+$('dlg-input').addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); runDialog(); } });
+$('scrim').addEventListener('mousedown', function(e){ if (e.target === $('scrim') && !$('dlg-cancel').disabled) closeDialog(); });
+document.addEventListener('keydown', function(e){
+  if ($('scrim').hidden) return;
+  if (e.key === 'Escape') { if (!$('dlg-cancel').disabled) closeDialog(); return; }
+  if (e.key === 'Tab') {
+    var f = Array.prototype.filter.call($('scrim').querySelectorAll('button,input,select'), function(n){
+      return !n.disabled && !n.closest('[hidden]');
+    });
+    if (!f.length) return;
+    var first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+
+/* ---------- actions ---------- */
+function go(id){
+  S.cur = id; S.query = ''; $('q').value = '';
+  render();
+}
+function askNewFolder(){
+  openDialog({
+    title:'New folder', input:{label:'Folder name', value:''}, okText:'Create',
+    onOk:function(v){
+      var err = checkName(v.text);
+      if (err) return err;
+      if (nameTaken(folderList(), S.cur, v.text)) return 'A folder named “' + v.text + '” already exists here.';
+      return S.db.collection('folders').doc().set({name:v.text, parent:S.cur, createdAt:Date.now()})
+        .then(function(){ return ''; }, dbMsg);
+    }
+  });
+}
+function askRename(kind, item){
+  openDialog({
+    title:'Rename ' + kind, input:{label:'New name', value:item.name}, okText:'Rename',
+    onOk:function(v){
+      var err = checkName(v.text);
+      if (err) return err;
+      if (v.text === item.name) return '';
+      var list = kind === 'folder' ? folderList() : fileList();
+      if (nameTaken(list, item.where, v.text, item.id)) return '“' + v.text + '” already exists in that folder.';
+      return S.db.doc((kind === 'folder' ? 'folders/' : 'files/') + item.id).update({name:v.text})
+        .then(function(){ return ''; }, dbMsg);
+    }
+  });
+}
+function askMove(kind, item){
+  var banned = kind === 'folder' ? descendantIds(item.id) : {};
+  var opts = folderList().filter(function(f){ return !banned[f.id]; }).map(function(f){
+    return {value:f.id, label:'Home / ' + pathNames(f.id).join(' / ')};
+  }).sort(function(a, b){ return a.label.localeCompare(b.label, undefined, {numeric:true}); });
+  opts.unshift({value:ROOT, label:'Home'});
+  openDialog({
+    title:'Move ' + kind, body:'Choose where “' + item.name + '” should go.',
+    select:{label:'Destination', options:opts, value:item.where}, okText:'Move',
+    onOk:function(v){
+      var target = v.choice;
+      if (target === item.where) return '';
+      var list = kind === 'folder' ? folderList() : fileList();
+      if (nameTaken(list, target, item.name, item.id)) return 'There’s already something named “' + item.name + '” in that folder.';
+      var patch = kind === 'folder' ? {parent:target} : {folder:target};
+      return S.db.doc((kind === 'folder' ? 'folders/' : 'files/') + item.id).update(patch)
+        .then(function(){ return ''; }, dbMsg);
+    }
+  });
+}
+function delMsg(e){
+  var c = e && e.code;
+  if (c === 'rate_limited' || c === 'resource_exhausted') return 'Too many changes at once. Wait a moment and try again.';
+  return 'Couldn’t delete that. Try again.';
+}
+function removeFile(f){
+  var step = (S.assets && f.asset) ? S.assets.delete(f.asset) : Promise.resolve();
+  return step.then(function(){ return S.db.doc('files/' + f.id).delete(); })
+    .then(function(){ return ''; }, delMsg);
+}
+function askDeleteFile(f){
+  openDialog({
+    title:'Delete file', body:'“' + f.name + '” will be permanently deleted. This can’t be undone.',
+    okText:'Delete', danger:true,
+    onOk:function(){ return removeFile(f).then(function(err){ if (!err) refreshUsage(); return err; }); }
+  });
+}
+function askDeleteFolder(f){
+  var ids = descendantIds(f.id);
+  var subs = Object.keys(ids).length - 1;
+  var inside = fileList().filter(function(x){ return ids[x.where]; });
+  var parts = [];
+  if (subs) parts.push(plural(subs, 'subfolder'));
+  if (inside.length) parts.push(plural(inside.length, 'file'));
+  var body = '“' + f.name + '”' + (parts.length ? ' and everything in it (' + parts.join(', ') + ') will be permanently deleted.' : ' will be deleted.') + ' This can’t be undone.';
+  openDialog({
+    title:'Delete folder', body:body, okText:'Delete', danger:true,
+    onOk:function(){ return removeFolder(ids, inside); }
+  });
+}
+function removeFolder(ids, files){
+  var i = 0, j = 0, fids = Object.keys(ids);
+  function nextFile(){
+    if (i >= files.length) return Promise.resolve();
+    return removeFile(files[i++]).then(function(err){ if (err) throw new Error(err); return nextFile(); });
+  }
+  function nextFolder(){
+    if (j >= fids.length) return Promise.resolve();
+    return S.db.doc('folders/' + fids[j++]).delete().then(nextFolder);
+  }
+  return nextFile().then(nextFolder).then(function(){ refreshUsage(); return ''; }, function(e){
+    refreshUsage();
+    return e && e.message && !e.code ? e.message : delMsg(e);
+  });
+}
+
+function saveFile(f, btn){
+  if (!S.downloads) return;
+  btn.disabled = true;
+  fetch('/_blob/' + f.asset).then(function(r){
+    if (!r.ok) throw new Error('fetch');
+    return r.blob();
+  }).then(function(b){
+    return S.downloads.save({filename:f.name, data:b});
+  }).then(function(){
+    notice('Saved “' + f.name + '”.', 'ok');
+  }, function(e){
+    if (e && e.code === 'declined') return;
+    notice(e && e.code === 'rejected_extension'
+      ? 'This file type can’t be saved from here. Open it and save it from the new tab.'
+      : 'Couldn’t save “' + f.name + '”. Try opening it instead.', 'err');
+  }).then(function(){ btn.disabled = !S.db; });
+}
+
+/* ---------- uploads ---------- */
+function failUpload(it, msg){
+  it.status = 'error'; it.msg = msg;
+  renderUploads();
+  return Promise.resolve();
+}
+function uploadOne(file, it, where, batch){
+  var ext = extOf(file.name), type = TYPES[ext];
+  if (!type) return failUpload(it, ext ? '.' + ext + ' files can’t be stored here.' : 'Files without an extension, and whole folders, can’t be stored.');
+  if (file.size === 0) return failUpload(it, 'The file is empty.');
+  var limit = type === 'image/svg+xml' ? 2 * MB : (type === 'text/css' || type === 'text/javascript') ? 16 * MB : 20 * MB;
+  if (file.size > limit) return failUpload(it, 'Over the ' + fmtBytes(limit) + ' limit.');
+  it.status = 'uploading'; it.msg = 'Uploading…';
+  renderUploads();
+  return S.assets.upload(file, {type:type}).then(function(res){
+    var name = uniqueFileName(file.name, where, batch);
+    return S.db.collection('files').doc().set({
+      name:name, folder:where, asset:res.id, size:res.sizeBytes || file.size, type:res.contentType || type, createdAt:Date.now()
+    }).then(function(){
+      it.status = 'done'; it.msg = 'Saved'; renderUploads();
+    }, function(e){
+      return S.assets.delete(res.id).catch(function(){}).then(function(){ return failUpload(it, dbMsg(e)); });
+    });
+  }, function(e){ return failUpload(it, assetMsg(e)); });
+}
+function uploadAll(files, where){
+  if (!files.length) return;
+  if (!S.assets || !S.db) { notice('Uploads aren’t available in this view.', 'err'); return; }
+  var batch = {};
+  var items = files.map(function(f){
+    var it = {id:++uid, name:f.name, status:'waiting', msg:'Waiting'};
+    S.uploads.push(it);
+    return {file:f, it:it};
+  });
+  renderUploads();
+  var chain = Promise.resolve();
+  items.forEach(function(x){ chain = chain.then(function(){ return uploadOne(x.file, x.it, where, batch); }); });
+  chain.then(function(){
+    refreshUsage();
+    setTimeout(function(){
+      S.uploads = S.uploads.filter(function(it){ return it.status !== 'done'; });
+      renderUploads();
+    }, 4000);
+  });
+}
+function refreshUsage(){
+  if (!S.assets) return;
+  S.assets.list().then(function(r){ S.usage = r.usage; renderSummary(); }, function(){});
+}
+
+/* ---------- rendering ---------- */
+function renderBanner(){
+  var b = $('banner');
+  var msg = S.dbError || (S.dbMissing ? 'Storage isn’t available in this view, so folders can’t load or save. Open this page from your Claude artifacts while signed in.' : '');
+  b.textContent = msg;
+  b.hidden = !msg;
+}
+function renderControls(){
+  var ready = !!S.db && S.gotF && S.gotFi && !S.dbError;
+  $('btn-folder').disabled = !ready;
+  $('btn-upload').disabled = !ready || !S.assets;
+}
+function renderSummary(){
+  var s = $('summary');
+  if (S.dbMissing) s.textContent = 'Storage unavailable';
+  else if (!(S.gotF && S.gotFi)) s.textContent = 'Loading…';
+  else s.textContent = plural(Object.keys(S.files).length, 'file') + ' in ' + plural(Object.keys(S.folders).length, 'folder');
+  var m = $('meter');
+  if (S.usage && S.usage.maxBytes) {
+    m.hidden = false;
+    var pct = Math.min(100, Math.round(S.usage.bytes / S.usage.maxBytes * 100));
+    $('meter-bar').style.width = Math.max(pct, S.usage.bytes > 0 ? 2 : 0) + '%';
+    $('meter-text').textContent = fmtBytes(S.usage.bytes) + ' of ' + fmtBytes(S.usage.maxBytes) + ' used';
+  } else m.hidden = true;
+}
+function renderCrumbs(){
+  var n = $('crumbs');
+  n.textContent = '';
+  var q = S.query.trim();
+  if (q) { n.appendChild(el('span', {class:'crumb-now', text:'Results for “' + q + '”'})); return; }
+  var trail = [], id = S.cur, seen = {};
+  while (id && id !== ROOT && S.folders[id] && !seen[id]) {
+    seen[id] = 1; trail.unshift(id); id = parentOf(S.folders[id].parent);
+  }
+  var items = [{id:ROOT, name:'Home'}].concat(trail.map(function(t){ return {id:t, name:String(S.folders[t].name || 'Untitled')}; }));
+  items.forEach(function(it, i){
+    if (i > 0) n.appendChild(el('span', {class:'sep', 'aria-hidden':'true', text:'/'}));
+    if (i === items.length - 1) n.appendChild(el('span', {class:'crumb-now', 'aria-current':'page', text:it.name}));
+    else n.appendChild(el('button', {class:'crumb', type:'button', text:it.name, onclick:function(){ go(it.id); }}));
+  });
+}
+function locationText(where){ return 'in ' + ['Home'].concat(pathNames(where)).join(' / '); }
+
+function folderCard(f, counts, showWhere){
+  var n = (counts.f[f.id] || 0) + (counts.i[f.id] || 0);
+  var meta = showWhere ? locationText(f.where) : plural(n, 'item');
+  return el('div', {class:'folder'}, [
+    el('button', {class:'folder-open', type:'button', 'aria-label':'Open folder ' + f.name, onclick:function(){ go(f.id); }}, [
+      icon('folder'),
+      el('span', {class:'f-name', text:f.name}),
+      el('span', {class:'f-meta', text:meta})
+    ]),
+    el('div', {class:'folder-actions'}, [
+      iconBtn('rename', 'Rename folder', function(){ askRename('folder', f); }),
+      iconBtn('move', 'Move folder', function(){ askMove('folder', f); }),
+      iconBtn('trash', 'Delete folder', function(){ askDeleteFolder(f); }, 'del')
+    ])
+  ]);
+}
+function fileRow(f, showWhere){
+  var url = '/_blob/' + f.asset;
+  var ext = extOf(f.name);
+  var box = el('span', {class:'thumbbox', 'aria-hidden':'true'}, [ext ? ext.slice(0, 4).toUpperCase() : 'FILE']);
+  if (/^image\//.test(f.type)) {
+    var img = el('img', {src:url, alt:'', loading:'lazy', decoding:'async'});
+    img.addEventListener('error', function(){ img.remove(); });
+    box.appendChild(img);
+  }
+  var meta = [fmtBytes(f.size), fmtDate(f.createdAt)].filter(Boolean);
+  if (showWhere) meta.push(locationText(f.where));
+  var actions = [];
+  if (S.downloads) actions.push(iconBtn('download', 'Save to this device', function(e){ saveFile(f, e.currentTarget); }));
+  actions.push(iconBtn('rename', 'Rename file', function(){ askRename('file', f); }));
+  actions.push(iconBtn('move', 'Move file', function(){ askMove('file', f); }));
+  actions.push(iconBtn('trash', 'Delete file', function(){ askDeleteFile(f); }, 'del'));
+  return el('div', {class:'file'}, [
+    box,
+    el('div', {}, [
+      el('a', {class:'file-name', href:url, target:'_blank', rel:'noopener', text:f.name}),
+      el('div', {class:'file-meta', text:meta.join(' · ')})
+    ]),
+    el('div', {class:'row-actions'}, actions)
+  ]);
+}
+function setEmpty(title, body){
+  var e = $('empty');
+  e.textContent = '';
+  e.appendChild(el('h2', {text:title}));
+  if (body) e.appendChild(el('p', {text:body}));
+  e.hidden = false;
+}
+function renderList(){
+  var q = S.query.trim().toLowerCase(), searching = !!q;
+  var fl = folderList(), fi = fileList();
+  var counts = {f:{}, i:{}};
+  fl.forEach(function(f){ counts.f[f.where] = (counts.f[f.where] || 0) + 1; });
+  fi.forEach(function(f){ counts.i[f.where] = (counts.i[f.where] || 0) + 1; });
+
+  var folders = searching ? fl.filter(function(f){ return f.name.toLowerCase().indexOf(q) >= 0; }) : fl.filter(function(f){ return f.where === S.cur; });
+  var files = searching ? fi.filter(function(f){ return f.name.toLowerCase().indexOf(q) >= 0; }) : fi.filter(function(f){ return f.where === S.cur; });
+  folders.sort(S.sort === 'new' ? sorter('new') : cmpName);
+  files.sort(sorter(S.sort));
+
+  var fBox = $('folders'), iBox = $('files');
+  fBox.textContent = ''; iBox.textContent = '';
+  folders.forEach(function(f){ fBox.appendChild(folderCard(f, counts, searching)); });
+  files.forEach(function(f){ iBox.appendChild(fileRow(f, searching)); });
+  $('folders-sec').hidden = !folders.length;
+  $('files-sec').hidden = !files.length;
+
+  var empty = $('empty');
+  empty.hidden = true;
+  if (folders.length || files.length) return;
+  if (S.dbMissing || S.dbError) { setEmpty('Nothing to show', 'Your folders will appear here once storage is available.'); return; }
+  if (!(S.gotF && S.gotFi)) {
+    setEmpty(S.slow ? 'Still waiting for your folders' : 'Loading your folders…', S.slow ? 'Check your connection. They will appear as soon as storage answers.' : '');
+    return;
+  }
+  if (searching) { setEmpty('No matches', 'Nothing is named “' + S.query.trim() + '”. Try a shorter search.'); return; }
+  if (!fl.length && !fi.length) { setEmpty('No folders yet', 'Make a folder for each project, then drop files into it. Anything you drop on this page goes into the folder you’re viewing.'); return; }
+  setEmpty('This folder is empty', 'Drop files here, or choose Upload files.');
+}
+function renderUploads(){
+  var box = $('uploads');
+  box.textContent = '';
+  S.uploads.forEach(function(it){
+    var kids = [
+      el('span', {class:'un', text:it.name}),
+      el('span', {class:'us', text:it.msg})
+    ];
+    if (it.status === 'error' || it.status === 'done') {
+      kids.push(el('button', {class:'ib', type:'button', title:'Dismiss', 'aria-label':'Dismiss', onclick:function(){
+        S.uploads = S.uploads.filter(function(x){ return x !== it; });
+        renderUploads();
+      }}, [icon('close')]));
+    }
+    box.appendChild(el('div', {class:'up ' + it.status}, kids));
+  });
+}
+function render(){
+  if (S.cur !== ROOT && S.gotF && !S.folders[S.cur]) S.cur = ROOT;
+  renderBanner();
+  renderControls();
+  renderSummary();
+  renderCrumbs();
+  renderList();
+  renderUploads();
+}
+
+/* ---------- wiring ---------- */
+$('btn-folder').addEventListener('click', askNewFolder);
+$('btn-upload').addEventListener('click', function(){ $('file-input').click(); });
+$('file-input').addEventListener('change', function(){
+  var list = Array.prototype.slice.call(this.files || []);
+  this.value = '';
+  uploadAll(list, S.cur);
+});
+$('q').addEventListener('input', function(){
+  S.query = this.value;
+  renderCrumbs(); renderList();
+});
+$('sort').addEventListener('change', function(){
+  S.sort = this.value;
+  renderList();
+});
+
+function hasFiles(e){
+  var t = e.dataTransfer && e.dataTransfer.types;
+  return !!t && Array.prototype.indexOf.call(t, 'Files') >= 0;
+}
+document.addEventListener('dragenter', function(e){
+  if (!hasFiles(e)) return;
+  e.preventDefault(); S.dragDepth++; $('drop-hint').hidden = false;
+});
+document.addEventListener('dragover', function(e){
+  if (!hasFiles(e)) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'copy';
+});
+document.addEventListener('dragleave', function(e){
+  if (!hasFiles(e)) return;
+  S.dragDepth = Math.max(0, S.dragDepth - 1);
+  if (!S.dragDepth) $('drop-hint').hidden = true;
+});
+document.addEventListener('drop', function(e){
+  if (!hasFiles(e)) return;
+  e.preventDefault(); S.dragDepth = 0; $('drop-hint').hidden = true;
+  uploadAll(Array.prototype.slice.call(e.dataTransfer.files || []), S.cur);
+});
+
+function onErr(e){
+  S.dbError = e && e.code === 'revoked'
+    ? 'Your access to this page changed. Reload to continue.'
+    : 'Your folders couldn’t be loaded. Reload the page to try again.';
+  render();
+}
+function afterSnap(){
+  if (S.gotF && S.gotFi) { clearTimeout(loadTimer); S.slow = false; }
+  render();
+}
+function startDb(db){
+  S.db = db;
+  loadTimer = setTimeout(function(){ if (!(S.gotF && S.gotFi)) { S.slow = true; render(); } }, 10000);
+  db.collection('folders').onSnapshot(function(snap){
+    var m = {};
+    snap.docs.forEach(function(d){ if (d.exists) m[d.id] = d.data(); });
+    S.folders = m; S.gotF = true; afterSnap();
+  }, onErr);
+  db.collection('files').onSnapshot(function(snap){
+    var m = {};
+    snap.docs.forEach(function(d){ if (d.exists) m[d.id] = d.data(); });
+    S.files = m; S.gotFi = true; afterSnap();
+  }, onErr);
+}
+function use(name){
+  if (!window.claude || !window.claude.use) return Promise.resolve(null);
+  return window.claude.use(name).then(function(x){ return x || null; }, function(){ return null; });
+}
+
+render();
+use('db').then(function(db){
+  if (!db) { S.dbMissing = true; render(); return; }
+  startDb(db);
+});
+use('assets').then(function(a){ S.assets = a; render(); refreshUsage(); });
+use('downloads').then(function(d){ S.downloads = d; render(); });
+})();
+</script>
+
+</body></html>
